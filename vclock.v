@@ -4,35 +4,6 @@
 
   Christopher Meiklejohn, 10/06/2013
   christopher.meiklejohn@gmail.com
-
-  % @doc Get the counter value in VClock set from Node.
-  -spec get_counter(Node :: vclock_node(), VClock :: vclock()) -> counter().
-  get_counter(Node, VClock) ->
-      case lists:keyfind(Node, 1, VClock) of
-    {_, {Ctr, _TS}} -> Ctr;
-    false           -> 0
-      end.
-
-  % @doc Return the list of all nodes that have ever incremented VClock.
-  -spec all_nodes(VClock :: vclock()) -> [vclock_node()].
-  all_nodes(VClock) ->
-      [X || {X,{_,_}} <- VClock].
-
-  % @doc Return a timestamp for a vector clock
-  -spec timestamp() -> timestamp().
-  timestamp() ->
-      %% Same as calendar:datetime_to_gregorian_seconds(erlang:universaltime()),
-      %% but significantly faster.
-      {MegaSeconds, Seconds, _} = os:timestamp(),
-      ?SECONDS_FROM_GREGORIAN_BASE_TO_EPOCH + MegaSeconds*1000000 + Seconds.
-
-  get_property(Key, PairList) ->
-      case lists:keyfind(Key, 1, PairList) of
-        {_Key, Value} ->
-          Value;
-        false ->
-          undefined
-      end.
 *) 
 
 Require Import Coq.FSets.FMaps.
@@ -76,32 +47,6 @@ Module VectorClockMap      := FMapWeakList.Make (Nat_as_Legacy_OT).
 Module VectorClockMapFacts := FMapFacts.Facts (VectorClockMap).
 
 Module VClock.
-
-(* Merge two clocks. *)
-Definition Clock_merge (n1 n2 : option nat) :=
-  match n1, n2 with
-    | None, None => None
-    | Some n, None => Some n
-    | None, Some n => Some n
-    | Some n1', Some n2' => Some (max n1' n2')
-  end.
-
-(* Compare two clocks. *)
-Definition Clock_compare (n1 n2 : option nat) :=
-  match n1, n2 with
-    | None, None => None
-    | Some n, None => Some false
-    | None, Some n => Some true
-    | Some n1', Some n2' => Some (leb n1' n2')
-  end.
-
-Definition Clock_true (n1 n2 : option nat) :=
-  match n1, n2 with
-    | None, None => None
-    | Some n, None => Some true
-    | None, Some n => Some true
-    | Some n1', Some n2' => Some true
-  end.
 
 Definition VectorClock := VectorClockMap.t nat.
 
@@ -150,6 +95,14 @@ Definition equal (c1 c2 : VectorClock) := VectorClockMap.Equal c1 c2.
               merge(VClock, NClock, [{Node1,CT}|AccClock])
       end.
 *)
+Definition Clock_merge (n1 n2 : option nat) :=
+  match n1, n2 with
+    | None, None => None
+    | Some n, None => Some n
+    | None, Some n => Some n
+    | Some n1', Some n2' => Some (max n1' n2')
+  end.
+
 Definition merge c1 c2 := VectorClockMap.map2 Clock_merge c1 c2.
 
 (*
@@ -172,7 +125,7 @@ Definition merge c1 c2 := VectorClockMap.map2 Clock_merge c1 c2.
 *)
 Definition increment actor clocks :=
   match VectorClockMap.find actor clocks with
-    | None       => VectorClockMap.add actor 1 clocks
+    | None       =>  VectorClockMap.add actor 1 clocks
     | Some count => (VectorClockMap.add actor (S count) clocks)
   end.
 
@@ -191,6 +144,22 @@ Definition increment actor clocks :=
               (CtrA >= CtrB) andalso descends(Va,RestB)
           end.
 *)
+Definition Clock_compare (n1 n2 : option nat) :=
+  match n1, n2 with
+    | None, None => None
+    | Some n, None => Some false
+    | None, Some n => Some true
+    | Some n1', Some n2' => Some (leb n1' n2')
+  end.
+
+Definition Clock_true (n1 n2 : option nat) :=
+  match n1, n2 with
+    | None, None => None
+    | Some n, None => Some true
+    | None, Some n => Some true
+    | Some n1', Some n2' => Some true
+  end.
+
 Definition descends (c1 c2 : VectorClock) :=
   VectorClockMap.Equal
     (VectorClockMap.map2 Clock_compare c2 c1) (VectorClockMap.map2 Clock_true c2 c1).
@@ -231,6 +200,43 @@ Definition descends (c1 c2 : VectorClock) :=
            ((Now - HeadTime) > get_property(old_vclock,BProps)) of
           true -> prune_vclock1(tl(V),Now,BProps);
           false -> V
+      end.
+*)
+
+(*
+  % @doc Return the list of all nodes that have ever incremented VClock.
+  -spec all_nodes(VClock :: vclock()) -> [vclock_node()].
+  all_nodes(VClock) ->
+      [X || {X,{_,_}} <- VClock].
+*)
+
+(*
+  get_property(Key, PairList) ->
+      case lists:keyfind(Key, 1, PairList) of
+        {_Key, Value} ->
+          Value;
+        false ->
+          undefined
+      end.
+*)
+
+(*
+  % @doc Return a timestamp for a vector clock
+  -spec timestamp() -> timestamp().
+  timestamp() ->
+      %% Same as calendar:datetime_to_gregorian_seconds(erlang:universaltime()),
+      %% but significantly faster.
+      {MegaSeconds, Seconds, _} = os:timestamp(),
+      ?SECONDS_FROM_GREGORIAN_BASE_TO_EPOCH + MegaSeconds*1000000 + Seconds.
+*)
+
+(*
+  % @doc Get the counter value in VClock set from Node.
+  -spec get_counter(Node :: vclock_node(), VClock :: vclock()) -> counter().
+  get_counter(Node, VClock) ->
+      case lists:keyfind(Node, 1, VClock) of
+    {_, {Ctr, _TS}} -> Ctr;
+    false           -> 0
       end.
 *)
 
