@@ -5,51 +5,6 @@
   Christopher Meiklejohn, 10/06/2013
   christopher.meiklejohn@gmail.com
 
-  -export([fresh/0,descends/2,merge/1,get_counter/2,get_timestamp/2,
-    increment/2,increment/3,all_nodes/1,equal/2,prune/3,timestamp/0]).
-
-  % @doc Return true if Va is a direct descendant of Vb, else false -- remember, a vclock is its own descendant!
-  -spec descends(Va :: vclock()|[], Vb :: vclock()|[]) -> boolean().
-  descends(_, []) ->
-      % all vclocks descend from the empty vclock
-      true;
-  descends(Va, Vb) ->
-      [{NodeB, {CtrB, _T}}|RestB] = Vb,
-      case lists:keyfind(NodeB, 1, Va) of
-          false ->
-              false;
-          {_, {CtrA, _TSA}} ->
-              (CtrA >= CtrB) andalso descends(Va,RestB)
-          end.
-
-  % @doc Combine all VClocks in the input list into their least possible
-  %      common descendant.
-  -spec merge(VClocks :: [vclock()]) -> vclock() | [].
-  merge([])             -> [];
-  merge([SingleVclock]) -> SingleVclock;
-  merge([First|Rest])   -> merge(Rest, lists:keysort(1, First)).
-
-  merge([], NClock) -> NClock;
-  merge([AClock|VClocks],NClock) ->
-      merge(VClocks, merge(lists:keysort(1, AClock), NClock, [])).
-
-  merge([], [], AccClock) -> lists:reverse(AccClock);
-  merge([], Left, AccClock) -> lists:reverse(AccClock, Left);
-  merge(Left, [], AccClock) -> lists:reverse(AccClock, Left);
-  merge(V=[{Node1,{Ctr1,TS1}=CT1}=NCT1|VClock],
-        N=[{Node2,{Ctr2,TS2}=CT2}=NCT2|NClock], AccClock) ->
-      if Node1 < Node2 ->
-              merge(VClock, N, [NCT1|AccClock]);
-         Node1 > Node2 ->
-              merge(V, NClock, [NCT2|AccClock]);
-         true ->
-              ({_Ctr,_TS} = CT) = if Ctr1 > Ctr2 -> CT1;
-                                     Ctr1 < Ctr2 -> CT2;
-                                     true        -> {Ctr1, erlang:max(TS1,TS2)}
-                                  end,
-              merge(VClock, NClock, [{Node1,CT}|AccClock])
-      end.
-
   % @doc Get the counter value in VClock set from Node.
   -spec get_counter(Node :: vclock_node(), VClock :: vclock()) -> counter().
   get_counter(Node, VClock) ->
@@ -65,23 +20,6 @@
     {_, {_Ctr, TS}} -> TS;
     false           -> undefined
       end.
-
-  % @doc Increment VClock at Node.
-  -spec increment(Node :: vclock_node(), VClock :: vclock()) -> vclock().
-  increment(Node, VClock) ->
-      increment(Node, timestamp(), VClock).
-
-  % @doc Increment VClock at Node.
-  -spec increment(Node :: vclock_node(), IncTs :: timestamp(),
-                  VClock :: vclock()) -> vclock().
-  increment(Node, IncTs, VClock) ->
-      {{_Ctr, _TS}=C1,NewV} = case lists:keytake(Node, 1, VClock) of
-                                  false ->
-                                      {{1, IncTs}, VClock};
-                                  {value, {_N, {C, _T}}, ModV} ->
-                                      {{C + 1, IncTs}, ModV}
-                              end,
-      [{Node,C1}|NewV].
 
 
   % @doc Return the list of all nodes that have ever incremented VClock.
@@ -137,127 +75,6 @@
         false ->
           undefined
       end.
-
-  %% ===================================================================
-  %% EUnit tests
-  %% ===================================================================
-  -ifdef(TEST).
-
-  % doc Serves as both a trivial test and some example code.
-  example_test() ->
-      A = vclock:fresh(),
-      B = vclock:fresh(),
-      A1 = vclock:increment(a, A),
-      B1 = vclock:increment(b, B),
-      true = vclock:descends(A1,A),
-      true = vclock:descends(B1,B),
-      false = vclock:descends(A1,B1),
-      A2 = vclock:increment(a, A1),
-      C = vclock:merge([A2, B1]),
-      C1 = vclock:increment(c, C),
-      true = vclock:descends(C1, A2),
-      true = vclock:descends(C1, B1),
-      false = vclock:descends(B1, C1),
-      false = vclock:descends(B1, A1),
-      ok.
-
-  prune_small_test() ->
-      % vclock with less entries than small_vclock will be untouched
-      Now = riak_core_util:moment(),
-      OldTime = Now - 32000000,
-      SmallVC = [{<<"1">>, {1, OldTime}},
-                 {<<"2">>, {2, OldTime}},
-                 {<<"3">>, {3, OldTime}}],
-      Props = [{small_vclock,4}],
-      ?assertEqual(lists:sort(SmallVC), lists:sort(prune(SmallVC, Now, Props))).
-
-  prune_young_test() ->
-      % vclock with all entries younger than young_vclock will be untouched
-      Now = riak_core_util:moment(),
-      NewTime = Now - 1,
-      VC = [{<<"1">>, {1, NewTime}},
-            {<<"2">>, {2, NewTime}},
-            {<<"3">>, {3, NewTime}}],
-      Props = [{small_vclock,1},{young_vclock,1000}],
-      ?assertEqual(lists:sort(VC), lists:sort(prune(VC, Now, Props))).
-
-  prune_big_test() ->
-      % vclock not preserved by small or young will be pruned down to
-      % no larger than big_vclock entries
-      Now = riak_core_util:moment(),
-      NewTime = Now - 1000,
-      VC = [{<<"1">>, {1, NewTime}},
-            {<<"2">>, {2, NewTime}},
-            {<<"3">>, {3, NewTime}}],
-      Props = [{small_vclock,1},{young_vclock,1},
-               {big_vclock,2},{old_vclock,100000}],
-      ?assert(length(prune(VC, Now, Props)) =:= 2).
-
-  prune_old_test() ->
-      % vclock not preserved by small or young will be pruned down to
-      % no larger than big_vclock and no entries more than old_vclock ago
-      Now = riak_core_util:moment(),
-      NewTime = Now - 1000,
-      OldTime = Now - 100000,    
-      VC = [{<<"1">>, {1, NewTime}},
-            {<<"2">>, {2, OldTime}},
-            {<<"3">>, {3, OldTime}}],
-      Props = [{small_vclock,1},{young_vclock,1},
-               {big_vclock,2},{old_vclock,10000}],
-      ?assert(length(prune(VC, Now, Props)) =:= 1).
-
-  prune_order_test() ->
-      % vclock with two nodes of the same timestamp will be pruned down
-      % to the same node
-      Now = riak_core_util:moment(),
-      OldTime = Now - 100000,    
-      VC1 = [{<<"1">>, {1, OldTime}},
-             {<<"2">>, {2, OldTime}}],
-      VC2 = lists:reverse(VC1),
-      Props = [{small_vclock,1},{young_vclock,1},
-               {big_vclock,2},{old_vclock,10000}],
-      ?assertEqual(prune(VC1, Now, Props), prune(VC2, Now, Props)).
-
-  accessor_test() ->
-      VC = [{<<"1">>, {1, 1}},
-            {<<"2">>, {2, 2}}],
-      ?assertEqual(1, get_counter(<<"1">>, VC)),
-      ?assertEqual(1, get_timestamp(<<"1">>, VC)),
-      ?assertEqual(2, get_counter(<<"2">>, VC)),
-      ?assertEqual(2, get_timestamp(<<"2">>, VC)),
-      ?assertEqual(0, get_counter(<<"3">>, VC)),
-      ?assertEqual(undefined, get_timestamp(<<"3">>, VC)),
-      ?assertEqual([<<"1">>, <<"2">>], all_nodes(VC)).
-
-  merge_test() ->
-      VC1 = [{<<"1">>, {1, 1}},
-             {<<"2">>, {2, 2}},
-             {<<"4">>, {4, 4}}],
-      VC2 = [{<<"3">>, {3, 3}},
-             {<<"4">>, {3, 3}}],
-      ?assertEqual([], merge(vclock:fresh())),
-      ?assertEqual([{<<"1">>,{1,1}},{<<"2">>,{2,2}},{<<"3">>,{3,3}},{<<"4">>,{4,4}}],
-                   merge([VC1, VC2])).
-
-  merge_less_left_test() ->
-      VC1 = [{<<"5">>, {5, 5}}],
-      VC2 = [{<<"6">>, {6, 6}}, {<<"7">>, {7, 7}}],
-      ?assertEqual([{<<"5">>, {5, 5}},{<<"6">>, {6, 6}}, {<<"7">>, {7, 7}}],
-                   vclock:merge([VC1, VC2])).
-
-  merge_less_right_test() ->
-      VC1 = [{<<"6">>, {6, 6}}, {<<"7">>, {7, 7}}],
-      VC2 = [{<<"5">>, {5, 5}}],
-      ?assertEqual([{<<"5">>, {5, 5}},{<<"6">>, {6, 6}}, {<<"7">>, {7, 7}}],
-                   vclock:merge([VC1, VC2])).
-
-  merge_same_id_test() ->
-      VC1 = [{<<"1">>, {1, 2}},{<<"2">>,{1,4}}],
-      VC2 = [{<<"1">>, {1, 3}},{<<"3">>,{1,5}}],
-      ?assertEqual([{<<"1">>, {1, 3}},{<<"2">>,{1,4}},{<<"3">>,{1,5}}],
-                   vclock:merge([VC1, VC2])).
-
-  -endif.
 *) 
 
 Require Import Coq.FSets.FMaps.
@@ -302,6 +119,32 @@ Module VectorClockMapFacts := FMapFacts.Facts (VectorClockMap).
 
 Module VClock.
 
+(* Merge two clocks. *)
+Definition Clock_merge (n1 n2 : option nat) :=
+  match n1, n2 with
+    | None, None => None
+    | Some n, None => Some n
+    | None, Some n => Some n
+    | Some n1', Some n2' => Some (max n1' n2')
+  end.
+
+(* Compare two clocks. *)
+Definition Clock_compare (n1 n2 : option nat) :=
+  match n1, n2 with
+    | None, None => None
+    | Some n, None => Some false
+    | None, Some n => Some true
+    | Some n1', Some n2' => Some (leb n1' n2')
+  end.
+
+Definition Clock_true (n1 n2 : option nat) :=
+  match n1, n2 with
+    | None, None => None
+    | Some n, None => Some true
+    | None, Some n => Some true
+    | Some n1', Some n2' => Some true
+  end.
+
 Definition VectorClock := VectorClockMap.t nat.
 
 (*
@@ -319,6 +162,80 @@ Definition fresh : VectorClock := VectorClockMap.empty nat.
       lists:sort(VA) =:= lists:sort(VB).
 *)
 Definition equal (c1 c2 : VectorClock) := VectorClockMap.Equal c1 c2.
+
+(*
+  % @doc Combine all VClocks in the input list into their least possible
+  %      common descendant.
+  -spec merge(VClocks :: [vclock()]) -> vclock() | [].
+  merge([])             -> [];
+  merge([SingleVclock]) -> SingleVclock;
+  merge([First|Rest])   -> merge(Rest, lists:keysort(1, First)).
+
+  merge([], NClock) -> NClock;
+  merge([AClock|VClocks],NClock) ->
+      merge(VClocks, merge(lists:keysort(1, AClock), NClock, [])).
+
+  merge([], [], AccClock) -> lists:reverse(AccClock);
+  merge([], Left, AccClock) -> lists:reverse(AccClock, Left);
+  merge(Left, [], AccClock) -> lists:reverse(AccClock, Left);
+  merge(V=[{Node1,{Ctr1,TS1}=CT1}=NCT1|VClock],
+        N=[{Node2,{Ctr2,TS2}=CT2}=NCT2|NClock], AccClock) ->
+      if Node1 < Node2 ->
+              merge(VClock, N, [NCT1|AccClock]);
+         Node1 > Node2 ->
+              merge(V, NClock, [NCT2|AccClock]);
+         true ->
+              ({_Ctr,_TS} = CT) = if Ctr1 > Ctr2 -> CT1;
+                                     Ctr1 < Ctr2 -> CT2;
+                                     true        -> {Ctr1, erlang:max(TS1,TS2)}
+                                  end,
+              merge(VClock, NClock, [{Node1,CT}|AccClock])
+      end.
+*)
+Definition merge c1 c2 := VectorClockMap.map2 Clock_merge c1 c2.
+
+(*
+  % @doc Increment VClock at Node.
+  -spec increment(Node :: vclock_node(), VClock :: vclock()) -> vclock().
+  increment(Node, VClock) ->
+      increment(Node, timestamp(), VClock).
+
+  % @doc Increment VClock at Node.
+  -spec increment(Node :: vclock_node(), IncTs :: timestamp(),
+                  VClock :: vclock()) -> vclock().
+  increment(Node, IncTs, VClock) ->
+      {{_Ctr, _TS}=C1,NewV} = case lists:keytake(Node, 1, VClock) of
+                                  false ->
+                                      {{1, IncTs}, VClock};
+                                  {value, {_N, {C, _T}}, ModV} ->
+                                      {{C + 1, IncTs}, ModV}
+                              end,
+      [{Node,C1}|NewV].
+*)
+Definition increment actor clocks :=
+  match VectorClockMap.find actor clocks with
+    | None       => VectorClockMap.add actor 1 clocks
+    | Some count => (VectorClockMap.add actor (S count) clocks)
+  end.
+
+(*
+  % @doc Return true if Va is a direct descendant of Vb, else false -- remember, a vclock is its own descendant!
+  -spec descends(Va :: vclock()|[], Vb :: vclock()|[]) -> boolean().
+  descends(_, []) ->
+      % all vclocks descend from the empty vclock
+      true;
+  descends(Va, Vb) ->
+      [{NodeB, {CtrB, _T}}|RestB] = Vb,
+      case lists:keyfind(NodeB, 1, Va) of
+          false ->
+              false;
+          {_, {CtrA, _TSA}} ->
+              (CtrA >= CtrB) andalso descends(Va,RestB)
+          end.
+*)
+Definition descends (c1 c2 : VectorClock) :=
+  VectorClockMap.Equal
+    (VectorClockMap.map2 Clock_compare c2 c1) (VectorClockMap.map2 Clock_true c2 c1).
 
 End VClock.
 
