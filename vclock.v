@@ -13,25 +13,10 @@
     false           -> 0
       end.
 
-  % @doc Get the timestamp value in a VClock set from Node.
-  -spec get_timestamp(Node :: vclock_node(), VClock :: vclock()) -> timestamp() | undefined.
-  get_timestamp(Node, VClock) ->
-      case lists:keyfind(Node, 1, VClock) of
-    {_, {_Ctr, TS}} -> TS;
-    false           -> undefined
-      end.
-
-
   % @doc Return the list of all nodes that have ever incremented VClock.
   -spec all_nodes(VClock :: vclock()) -> [vclock_node()].
   all_nodes(VClock) ->
       [X || {X,{_,_}} <- VClock].
-
-  -define(DAYS_FROM_GREGORIAN_BASE_TO_EPOCH, (1970*365+478)).
-  -define(SECONDS_FROM_GREGORIAN_BASE_TO_EPOCH,
-    (?DAYS_FROM_GREGORIAN_BASE_TO_EPOCH * 24*60*60)
-    %% == calendar:datetime_to_gregorian_seconds({{1970,1,1},{0,0,0}})
-         ).
 
   % @doc Return a timestamp for a vector clock
   -spec timestamp() -> timestamp().
@@ -40,33 +25,6 @@
       %% but significantly faster.
       {MegaSeconds, Seconds, _} = os:timestamp(),
       ?SECONDS_FROM_GREGORIAN_BASE_TO_EPOCH + MegaSeconds*1000000 + Seconds.
-
-  % @doc Possibly shrink the size of a vclock, depending on current age and size.
-  -spec prune(V::vclock(), Now::integer(), BucketProps::term()) -> vclock().
-  prune(V,Now,BucketProps) ->
-      %% This sort need to be deterministic, to avoid spurious merge conflicts later.
-      %% We achieve this by using the node ID as secondary key.
-      SortV = lists:sort(fun({N1,{_,T1}},{N2,{_,T2}}) -> {T1,N1} < {T2,N2} end, V),
-      prune_vclock1(SortV,Now,BucketProps).
-  % @private
-  prune_vclock1(V,Now,BProps) ->
-      case length(V) =< get_property(small_vclock, BProps) of
-          true -> V;
-          false ->
-              {_,{_,HeadTime}} = hd(V),
-              case (Now - HeadTime) < get_property(young_vclock,BProps) of
-                  true -> V;
-                  false -> prune_vclock1(V,Now,BProps,HeadTime)
-              end
-      end.
-  % @private
-  prune_vclock1(V,Now,BProps,HeadTime) ->
-      % has a precondition that V is longer than small and older than young
-      case (length(V) > get_property(big_vclock,BProps)) orelse
-           ((Now - HeadTime) > get_property(old_vclock,BProps)) of
-          true -> prune_vclock1(tl(V),Now,BProps);
-          false -> V
-      end.
 
   get_property(Key, PairList) ->
       case lists:keyfind(Key, 1, PairList) of
@@ -236,6 +194,45 @@ Definition increment actor clocks :=
 Definition descends (c1 c2 : VectorClock) :=
   VectorClockMap.Equal
     (VectorClockMap.map2 Clock_compare c2 c1) (VectorClockMap.map2 Clock_true c2 c1).
+
+(*
+  % @doc Get the timestamp value in a VClock set from Node.
+  -spec get_timestamp(Node :: vclock_node(), VClock :: vclock()) -> timestamp() | undefined.
+  get_timestamp(Node, VClock) ->
+      case lists:keyfind(Node, 1, VClock) of
+    {_, {_Ctr, TS}} -> TS;
+    false           -> undefined
+      end.
+*)
+
+(*
+  % @doc Possibly shrink the size of a vclock, depending on current age and size.
+  -spec prune(V::vclock(), Now::integer(), BucketProps::term()) -> vclock().
+  prune(V,Now,BucketProps) ->
+      %% This sort need to be deterministic, to avoid spurious merge conflicts later.
+      %% We achieve this by using the node ID as secondary key.
+      SortV = lists:sort(fun({N1,{_,T1}},{N2,{_,T2}}) -> {T1,N1} < {T2,N2} end, V),
+      prune_vclock1(SortV,Now,BucketProps).
+  % @private
+  prune_vclock1(V,Now,BProps) ->
+      case length(V) =< get_property(small_vclock, BProps) of
+          true -> V;
+          false ->
+              {_,{_,HeadTime}} = hd(V),
+              case (Now - HeadTime) < get_property(young_vclock,BProps) of
+                  true -> V;
+                  false -> prune_vclock1(V,Now,BProps,HeadTime)
+              end
+      end.
+  % @private
+  prune_vclock1(V,Now,BProps,HeadTime) ->
+      % has a precondition that V is longer than small and older than young
+      case (length(V) > get_property(big_vclock,BProps)) orelse
+           ((Now - HeadTime) > get_property(old_vclock,BProps)) of
+          true -> prune_vclock1(tl(V),Now,BProps);
+          false -> V
+      end.
+*)
 
 End VClock.
 
