@@ -244,4 +244,4 @@ End VClock.
 
 Extraction Language CoreErlang.
 
-Recursive Extraction VClock.
+Recursive Extraction VClock.merge.
