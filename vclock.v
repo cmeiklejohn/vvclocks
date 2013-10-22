@@ -57,7 +57,7 @@ Definition VectorClock := VectorClockMap.t nat.
       [].
 *)
 
-Definition fresh : VectorClock := VectorClockMap.empty nat.
+Definition VClock_fresh : VectorClock := VectorClockMap.empty nat.
 
 (*
   % @doc Compares two VClocks for equality.
@@ -65,7 +65,8 @@ Definition fresh : VectorClock := VectorClockMap.empty nat.
   equal(VA,VB) ->
       lists:sort(VA) =:= lists:sort(VB).
 *)
-Definition equal (c1 c2 : VectorClock) := VectorClockMap.equal beq_nat c1 c2.
+Definition VClock_equal (c1 c2 : VectorClock) :=
+  VectorClockMap.equal beq_nat c1 c2.
 
 (*
   % @doc Combine all VClocks in the input list into their least possible
@@ -104,7 +105,7 @@ Definition Clock_merge (n1 n2 : option nat) :=
     | Some n1', Some n2' => Some (max n1' n2')
   end.
 
-Definition merge c1 c2 := VectorClockMap.map2 Clock_merge c1 c2.
+Definition VClock_merge c1 c2 := VectorClockMap.map2 Clock_merge c1 c2.
 
 (*
   % @doc Increment VClock at Node.
@@ -124,14 +125,15 @@ Definition merge c1 c2 := VectorClockMap.map2 Clock_merge c1 c2.
                               end,
       [{Node,C1}|NewV].
 *)
-Definition increment actor clocks :=
+Definition VClock_increment actor clocks :=
   match VectorClockMap.find actor clocks with
     | None       =>  VectorClockMap.add actor 1 clocks
     | Some count => (VectorClockMap.add actor (S count) clocks)
   end.
 
 (*
-  % @doc Return true if Va is a direct descendant of Vb, else false -- remember, a vclock is its own descendant!
+  % @doc Return true if Va is a direct descendant of Vb, 
+  % else false -- remember, a vclock is its own descendant!
   -spec descends(Va :: vclock()|[], Vb :: vclock()|[]) -> boolean().
   descends(_, []) ->
       % all vclocks descend from the empty vclock
@@ -161,13 +163,15 @@ Definition Clock_true (n1 n2 : option nat) :=
     | Some n1', Some n2' => Some true
   end.
 
-Definition descends (c1 c2 : VectorClock) :=
-  VectorClockMap.Equal
-    (VectorClockMap.map2 Clock_compare c2 c1) (VectorClockMap.map2 Clock_true c2 c1).
+Definition VClock_descends (c1 c2 : VectorClock) :=
+  VectorClockMap.equal eqb
+    (VectorClockMap.map2 Clock_compare c2 c1)
+    (VectorClockMap.map2 Clock_true c2 c1).
 
 (*
   % @doc Get the timestamp value in a VClock set from Node.
-  -spec get_timestamp(Node :: vclock_node(), VClock :: vclock()) -> timestamp() | undefined.
+  -spec get_timestamp(Node :: vclock_node(), VClock :: vclock()) -> 
+    timestamp() | undefined.
   get_timestamp(Node, VClock) ->
       case lists:keyfind(Node, 1, VClock) of
     {_, {_Ctr, TS}} -> TS;
@@ -241,8 +245,73 @@ Definition descends (c1 c2 : VectorClock) :=
       end.
 *)
 
+Lemma Clock_merge_comm : forall n1 n2, 
+  Clock_merge n1 n2 = Clock_merge n2 n1.
+Proof.
+  intros. destruct n1; destruct n2; auto.
+  simpl. f_equal. apply Max.max_comm.
+Qed.
+
+Lemma Clock_merge_idempotent : forall n1, 
+  Clock_merge n1 n1 = n1.
+Proof.
+  intros. destruct n1; auto; simpl.
+  f_equal. apply Max.max_idempotent.
+Qed.
+
+Lemma Clock_merge_assoc : forall n1 n2 n3, 
+  Clock_merge n1 (Clock_merge n2 n3) = Clock_merge (Clock_merge n1 n2) n3.
+Proof.
+  intros. destruct n1; destruct n2; destruct n3; auto.
+  unfold Clock_merge. f_equal. apply Max.max_assoc.
+Qed.
+
+Lemma Clock_compare_refl : forall x,
+  Clock_compare x x = Clock_true x x.
+Proof.
+  intros; destruct x; auto. unfold Clock_compare. unfold Clock_true.
+  destruct n; auto. f_equal. simpl. rewrite leb_correct; auto.
+Qed.
+
+Theorem VectorClock_merge_comm : forall c1 c2,
+  VClock_equal (VClock_merge c1 c2) (VClock_merge c2 c1) = true.
+Proof.
+Admitted.
+
+Theorem VectorClock_merge_idempotent : forall clocks,
+  VClock_equal (VClock_merge clocks clocks) clocks = true.
+Proof.
+Admitted.
+
+Theorem VectorClock_merge_assoc : forall c1 c2 c3,
+  VClock_equal
+    (VClock_merge c1 (VClock_merge c2 c3))
+    (VClock_merge (VClock_merge c1 c2) c3) = true.
+Proof.
+Admitted.
+
+Theorem VectorClock_descends_idempotent : forall clocks,
+  VClock_descends clocks clocks = true.
+Proof.
+Admitted.
+
+Theorem VectorClock_incr_mono : forall clocks actor,
+  VClock_descends (VClock_increment actor clocks) clocks = true.
+Proof.
+Admitted.
+
+Theorem VectorClock_merge_mono : forall c1 c2,
+  VClock_descends (VClock_merge c1 c2) c1 = true.
+Proof.
+Admitted.
+
 End VClock.
 
 Extraction Language CoreErlang.
 
-Recursive Extraction VClock.fresh VClock.equal VClock.merge VClock.descends VClock.increment.
+Recursive Extraction 
+          VClock.VClock_fresh 
+          VClock.VClock_equal 
+          VClock.VClock_merge 
+          VClock.VClock_descends 
+          VClock.VClock_increment.
