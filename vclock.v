@@ -56,6 +56,7 @@ Definition VectorClock := VectorClockMap.t nat.
   fresh() ->
       [].
 *)
+
 Definition fresh : VectorClock := VectorClockMap.empty nat.
 
 (*
@@ -64,7 +65,7 @@ Definition fresh : VectorClock := VectorClockMap.empty nat.
   equal(VA,VB) ->
       lists:sort(VA) =:= lists:sort(VB).
 *)
-Definition equal (c1 c2 : VectorClock) := VectorClockMap.Equal c1 c2.
+Definition equal (c1 c2 : VectorClock) := VectorClockMap.equal beq_nat c1 c2.
 
 (*
   % @doc Combine all VClocks in the input list into their least possible
