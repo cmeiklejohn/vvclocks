@@ -97,6 +97,37 @@ Eval compute in equal fresh (increment 1 (fresh)).
           end.
 *)
 
+Fixpoint ble_nat (n m : nat) {struct n} : bool :=
+  match n with
+  | O => true
+  | S n' =>
+      match m with
+      | O => false
+      | S m' => ble_nat n' m'
+      end
+  end.
+
+Definition descends' status_and_vclock clock :=
+  match clock, status_and_vclock with
+    | pair actor count, pair status vclock => match find (find' actor) vclock with
+                                                | None => pair true vclock
+                                                | Some (pair _ y) => 
+                                                  pair (andb
+                                                          status
+                                                          (ble_nat count y)) vclock
+                                              end
+  end.
+
+Definition descends vc1 vc2 := 
+  match fold_left descends' vc1 (pair true vc2) with
+    | pair false _ => false
+    | pair true _ => true
+  end.
+
+Eval compute in descends (increment 1 (fresh)) (fresh).
+Eval compute in equal (increment 1 (fresh)) (increment 1 (fresh)).
+Eval compute in equal (increment 1 (fresh)) (increment 2 (fresh)).
+
 (*
   % @doc Combine all VClocks in the input list into their least possible
   %      common descendant.
