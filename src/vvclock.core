@@ -26,8 +26,10 @@ module 'vvclock' [ 'fresh'/0, 'find@'/2, 'find@@'/2, 'increment'/2, 'equal@'/2, 
    end
 'increment'/2 = fun (_actor, _vclock) -> 
   case call 'Coq.Lists.List':'find'
-            ( call 'vvclock':'find@' (_actor)
-            , _vclock
+            ( call 'vvclock':'find@' 
+              ( _actor
+              , _vclock 
+              )
             ) of
     {'Some', _p} when 'true' ->
         case _p of
@@ -39,8 +41,10 @@ module 'vvclock' [ 'fresh'/0, 'find@'/2, 'find@@'/2, 'increment'/2, 'equal@'/2, 
               , _y
               , {'S', _x}
               }|call 'Coq.Lists.List':'filter'
-                   ( call 'vvclock':'find@@' (_actor)
-                   , _vclock
+                   ( call 'vvclock':'find@@' 
+                    ( _actor
+                    , _vclock
+                    )
                    )]
          end
     'None' when 'true' ->
@@ -61,8 +65,10 @@ module 'vvclock' [ 'fresh'/0, 'find@'/2, 'find@@'/2, 'increment'/2, 'equal@'/2, 
           , _status
           } when 'true' ->
               case call 'Coq.Lists.List':'find'
-                        ( call 'vvclock':'find@' (_count)
-                        , _status
+                        ( call 'vvclock':'find@' 
+                          ( _count
+                          , _status
+                          )
                         ) of
                 {'Some', _p} when 'true' ->
                     case _p of
@@ -151,8 +157,10 @@ module 'vvclock' [ 'fresh'/0, 'find@'/2, 'find@@'/2, 'increment'/2, 'equal@'/2, 
           , _status
           } when 'true' ->
               case call 'Coq.Lists.List':'find'
-                        ( call 'vvclock':'find@' (_count)
-                        , _status
+                        ( call 'vvclock':'find@' 
+                          ( _count
+                          , _status
+                          )
                         ) of
                 {'Some', _p} when 'true' ->
                     case _p of
@@ -203,8 +211,10 @@ module 'vvclock' [ 'fresh'/0, 'find@'/2, 'find@@'/2, 'increment'/2, 'equal@'/2, 
     , _actor
     } when 'true' ->
         case call 'Coq.Lists.List':'find'
-                  ( call 'vvclock':'find@' (_count)
-                  , _vclock
+                  ( call 'vvclock':'find@' 
+                    ( _count
+                    , _vclock
+                    )
                   ) of
           {'Some', _p} when 'true' ->
               case _p of
@@ -219,8 +229,10 @@ module 'vvclock' [ 'fresh'/0, 'find@'/2, 'find@@'/2, 'increment'/2, 'equal@'/2, 
                          , _n
                          )
                     }|call 'Coq.Lists.List':'filter'
-                         ( call 'vvclock':'find@@' (_count)
-                         , _vclock
+                         ( call 'vvclock':'find@@' 
+                          ( _count
+                          , _vclock
+                          )
                          )]
                end
           'None' when 'true' ->
