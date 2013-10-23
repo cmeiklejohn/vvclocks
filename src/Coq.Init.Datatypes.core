@@ -1,0 +1,9 @@
+module 'Coq.Init.Datatypes' [ 'negb'/1 ] attributes [ ] 
+'negb'/1 = fun (_b) -> 
+  case _b of
+    'True' when 'true' ->
+        'False'
+    'False' when 'true' ->
+        'True'
+   end
+end

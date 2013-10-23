@@ -1,0 +1,17 @@
+module 'Coq.Init.Peano' [ 'max'/2 ] attributes [ ] 
+'max'/2 = fun (_n, _m) -> 
+  case _n of
+    'O' when 'true' ->
+        _m
+    {'S', _n@} when 'true' ->
+        case _m of
+          'O' when 'true' ->
+              _n
+          {'S', _m@} when 'true' ->
+              {'S', call 'Coq.Init.Peano':'max'
+                   ( _n@
+                   , _m@
+                   )}
+         end
+   end
+end

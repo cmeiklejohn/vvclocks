@@ -1,0 +1,22 @@
+module 'Coq.Arith.EqNat' [ 'beq_nat'/2 ] attributes [ ] 
+'beq_nat'/2 = fun (_n, _m) -> 
+  case _n of
+    'O' when 'true' ->
+        case _m of
+          'O' when 'true' ->
+              'True'
+          {'S', _n0} when 'true' ->
+              'False'
+         end
+    {'S', _n1} when 'true' ->
+        case _m of
+          'O' when 'true' ->
+              'False'
+          {'S', _m1} when 'true' ->
+              call 'Coq.Arith.EqNat':'beq_nat'
+                   ( _n1
+                   , _m1
+                   )
+         end
+   end
+end

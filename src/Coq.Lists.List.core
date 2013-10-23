@@ -1,0 +1,49 @@
+module 'Coq.Lists.List' [ 'fold_left'/3, 'filter'/2, 'find'/2 ] attributes [ ] 
+'fold_left'/3 = fun (_f, _l, _a0) -> 
+  case _l of
+    [] when 'true' ->
+        _a0
+    [_t|_b] when 'true' ->
+        call 'Coq.Lists.List':'fold_left'
+             ( _f
+             , _b
+             , apply _f
+                     ( _a0
+                     , _t
+                     )
+             )
+   end
+'filter'/2 = fun (_f, _l) -> 
+  case _l of
+    [] when 'true' ->
+        []
+    [_l0|_x] when 'true' ->
+        case apply _f (_l0) of
+          'True' when 'true' ->
+              [_l0|call 'Coq.Lists.List':'filter'
+                   ( _f
+                   , _x
+                   )]
+          'False' when 'true' ->
+              call 'Coq.Lists.List':'filter'
+                   ( _f
+                   , _x
+                   )
+         end
+   end
+'find'/2 = fun (_f, _l) -> 
+  case _l of
+    [] when 'true' ->
+        'None'
+    [_tl|_x] when 'true' ->
+        case apply _f (_tl) of
+          'True' when 'true' ->
+              {'Some', _tl}
+          'False' when 'true' ->
+              call 'Coq.Lists.List':'find'
+                   ( _f
+                   , _x
+                   )
+         end
+   end
+end
