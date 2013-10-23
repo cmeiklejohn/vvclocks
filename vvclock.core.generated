@@ -1,0 +1,340 @@
+module 'Coq.Init.Datatypes' [ 'negb'/1 ] attributes [ ] 
+'negb'/1 = fun (_b) -> 
+  case _b of
+    'True' when 'true' ->
+        'False'
+    'False' when 'true' ->
+        'True'
+   end
+end
+
+module 'Coq.Init.Peano' [ 'max'/2 ] attributes [ ] 
+'max'/2 = fun (_n, _m) -> 
+  case _n of
+    'O' when 'true' ->
+        _m
+    {'S', _n@} when 'true' ->
+        case _m of
+          'O' when 'true' ->
+              _n
+          {'S', _m@} when 'true' ->
+              {'S', call 'Coq.Init.Peano':'max'
+                   ( _n@
+                   , _m@
+                   )}
+         end
+   end
+end
+
+module 'Coq.Lists.List' [ 'fold_left'/3, 'filter'/2, 'find'/2 ] attributes [ ] 
+'fold_left'/3 = fun (_f, _l, _a0) -> 
+  case _l of
+    [] when 'true' ->
+        _a0
+    [_t|_b] when 'true' ->
+        call 'Coq.Lists.List':'fold_left'
+             ( _f
+             , _b
+             , apply _f
+                     ( _a0
+                     , _t
+                     )
+             )
+   end
+'filter'/2 = fun (_f, _l) -> 
+  case _l of
+    [] when 'true' ->
+        []
+    [_l0|_x] when 'true' ->
+        case apply _f (_l0) of
+          'True' when 'true' ->
+              [_l0|call 'Coq.Lists.List':'filter'
+                   ( _f
+                   , _x
+                   )]
+          'False' when 'true' ->
+              call 'Coq.Lists.List':'filter'
+                   ( _f
+                   , _x
+                   )
+         end
+   end
+'find'/2 = fun (_f, _l) -> 
+  case _l of
+    [] when 'true' ->
+        'None'
+    [_tl|_x] when 'true' ->
+        case apply _f (_tl) of
+          'True' when 'true' ->
+              {'Some', _tl}
+          'False' when 'true' ->
+              call 'Coq.Lists.List':'find'
+                   ( _f
+                   , _x
+                   )
+         end
+   end
+end
+
+module 'Coq.Arith.EqNat' [ 'beq_nat'/2 ] attributes [ ] 
+'beq_nat'/2 = fun (_n, _m) -> 
+  case _n of
+    'O' when 'true' ->
+        case _m of
+          'O' when 'true' ->
+              'True'
+          {'S', _n0} when 'true' ->
+              'False'
+         end
+    {'S', _n1} when 'true' ->
+        case _m of
+          'O' when 'true' ->
+              'False'
+          {'S', _m1} when 'true' ->
+              call 'Coq.Arith.EqNat':'beq_nat'
+                   ( _n1
+                   , _m1
+                   )
+         end
+   end
+end
+
+module 'vvclock' [ 'find@'/2, 'find@@'/2, 'increment'/2, 'equal@'/2, 'equal'/2, 'ble_nat'/2, 'descends@'/2, 'descends'/2, 'max@'/2, 'merge'/2 ] attributes [ ] 
+
+'find@'/2 = fun (_actor, _clock) -> 
+  case _clock of
+    { 'Pair'
+    , _n
+    , _x
+    } when 'true' ->
+        call 'Coq.Arith.EqNat':'beq_nat'
+             ( _actor
+             , _n
+             )
+   end
+'find@@'/2 = fun (_actor, _clock) -> 
+  case _clock of
+    { 'Pair'
+    , _n
+    , _x
+    } when 'true' ->
+        call 'Coq.Init.Datatypes':'negb' (call 'Coq.Arith.EqNat':'beq_nat'
+               ( _actor
+               , _n
+               ))
+   end
+'increment'/2 = fun (_actor, _vclock) -> 
+  case call 'Coq.Lists.List':'find'
+            ( call 'vvclock.VVClock':'find@' (_actor)
+            , _vclock
+            ) of
+    {'Some', _p} when 'true' ->
+        case _p of
+          { 'Pair'
+          , _y
+          , _x
+          } when 'true' ->
+              [{ 'Pair'
+              , _y
+              , {'S', _x}
+              }|call 'Coq.Lists.List':'filter'
+                   ( call 'vvclock.VVClock':'find@@' (_actor)
+                   , _vclock
+                   )]
+         end
+    'None' when 'true' ->
+        [{ 'Pair'
+        , _actor
+        , {'S', 'O'}
+        }|_vclock]
+   end
+'equal@'/2 = fun (_status_and_vclock, _clock) -> 
+  case _clock of
+    { 'Pair'
+    , _count
+    , _actor
+    } when 'true' ->
+        case _status_and_vclock of
+          { 'Pair'
+          , _vclock
+          , _status
+          } when 'true' ->
+              case call 'Coq.Lists.List':'find'
+                        ( call 'vvclock.VVClock':'find@' (_count)
+                        , _status
+                        ) of
+                {'Some', _p} when 'true' ->
+                    case _p of
+                      { 'Pair'
+                      , _y
+                      , _n
+                      } when 'true' ->
+                          { 'Pair'
+                          , case _vclock of
+                            'True' when 'true' ->
+                                call 'Coq.Arith.EqNat':'beq_nat'
+                                     ( _actor
+                                     , _n
+                                     )
+                            'False' when 'true' ->
+                                'False'
+                           end
+                          , _status
+                          }
+                     end
+                'None' when 'true' ->
+                    { 'Pair'
+                    , 'False'
+                    , _status
+                    }
+               end
+         end
+   end
+'equal'/2 = fun (_vc1, _vc2) -> 
+  case call 'Coq.Lists.List':'fold_left'
+            ( 'equal@'
+            , _vc1
+            , { 'Pair'
+              , 'True'
+              , _vc2
+              }
+            ) of
+    { 'Pair'
+    , _l
+    , _b
+    } when 'true' ->
+        case _l of
+          'True' when 'true' ->
+              case call 'Coq.Lists.List':'fold_left'
+                        ( 'equal@'
+                        , _vc2
+                        , { 'Pair'
+                          , 'True'
+                          , _vc1
+                          }
+                        ) of
+                { 'Pair'
+                , _l0
+                , _b0
+                } when 'true' ->
+                    _l0
+               end
+          'False' when 'true' ->
+              'False'
+         end
+   end
+'ble_nat'/2 = fun (_n, _m) -> 
+  case _n of
+    'O' when 'true' ->
+        'True'
+    {'S', _n@} when 'true' ->
+        case _m of
+          'O' when 'true' ->
+              'False'
+          {'S', _m@} when 'true' ->
+              call 'vvclock.VVClock':'ble_nat'
+                   ( _n@
+                   , _m@
+                   )
+         end
+   end
+'descends@'/2 = fun (_status_and_vclock, _clock) -> 
+  case _clock of
+    { 'Pair'
+    , _count
+    , _actor
+    } when 'true' ->
+        case _status_and_vclock of
+          { 'Pair'
+          , _vclock
+          , _status
+          } when 'true' ->
+              case call 'Coq.Lists.List':'find'
+                        ( call 'vvclock.VVClock':'find@' (_count)
+                        , _status
+                        ) of
+                {'Some', _p} when 'true' ->
+                    case _p of
+                      { 'Pair'
+                      , _y
+                      , _n
+                      } when 'true' ->
+                          { 'Pair'
+                          , case _vclock of
+                            'True' when 'true' ->
+                                call 'vvclock.VVClock':'ble_nat'
+                                     ( _actor
+                                     , _n
+                                     )
+                            'False' when 'true' ->
+                                'False'
+                           end
+                          , _status
+                          }
+                     end
+                'None' when 'true' ->
+                    { 'Pair'
+                    , 'True'
+                    , _status
+                    }
+               end
+         end
+   end
+'descends'/2 = fun (_vc1, _vc2) -> 
+  case call 'Coq.Lists.List':'fold_left'
+            ( 'descends@'
+            , _vc1
+            , { 'Pair'
+              , 'True'
+              , _vc2
+              }
+            ) of
+    { 'Pair'
+    , _l
+    , _b
+    } when 'true' ->
+        _l
+   end
+'max@'/2 = fun (_vclock, _clock) -> 
+  case _clock of
+    { 'Pair'
+    , _count
+    , _actor
+    } when 'true' ->
+        case call 'Coq.Lists.List':'find'
+                  ( call 'vvclock.VVClock':'find@' (_count)
+                  , _vclock
+                  ) of
+          {'Some', _p} when 'true' ->
+              case _p of
+                { 'Pair'
+                , _y
+                , _n
+                } when 'true' ->
+                    [{ 'Pair'
+                    , _count
+                    , call 'Coq.Init.Peano':'max'
+                         ( _actor
+                         , _n
+                         )
+                    }|call 'Coq.Lists.List':'filter'
+                         ( call 'vvclock.VVClock':'find@@' (_count)
+                         , _vclock
+                         )]
+               end
+          'None' when 'true' ->
+              [{ 'Pair'
+              , _count
+              , _actor
+              }|_vclock]
+         end
+   end
+'merge'/2 = fun (_vc1, _vc2) -> 
+  call 'Coq.Lists.List':'fold_left'
+       ( 'max@'
+       , _vc1
+       , _vc2
+       )
+end
+
+
