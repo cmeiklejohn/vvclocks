@@ -34,10 +34,6 @@ Definition fresh : vclock := nil.
       [{Node,C1}|NewV].
 *)
 
-Eval compute in beq_nat.
-
-Check find.
-
 Definition find' (actor : nat) (clock : (nat * nat)) :=
   match clock with
   | pair x _ => beq_nat actor x 
@@ -54,10 +50,6 @@ Definition increment (actor : nat) (vclock : vclock) :=
   | Some (pair x y) => cons (pair x (S y)) (filter (find'' actor) vclock)
   end.
 
-Eval compute in increment 1 (fresh).
-Eval compute in increment 1 (increment 2 (fresh)).
-Eval compute in increment 1 (increment 1 (fresh)).
-
 (*
   % @doc Compares two VClocks for equality.
   -spec equal(VClockA :: vclock(), VClockB :: vclock()) -> boolean().
@@ -65,7 +57,28 @@ Eval compute in increment 1 (increment 1 (fresh)).
       lists:sort(VA) =:= lists:sort(VB).
 *)
 
-Eval compute in fold_left.
+Definition equal' status_and_vclock clock :=
+  match clock, status_and_vclock with
+    | pair actor count, pair status vclock => match find (find' actor) vclock with
+                                                | None => pair false vclock
+                                                | Some (pair _ y) => 
+                                                  pair (andb
+                                                          status
+                                                          (beq_nat count y)) vclock
+                                              end
+  end.
+
+Definition equal vc1 vc2 := 
+  match fold_left equal' vc1 (pair true vc2) with
+    | pair false _ => false
+    | pair true _ => match fold_left equal' vc2 (pair true vc1) with
+                       | pair false _ => false
+                       | pair true _ => true
+                     end
+  end.
+                                          
+Eval compute in equal (increment 1 (fresh)) (increment 1 (fresh)).
+Eval compute in equal fresh (increment 1 (fresh)).
 
 (*
   % @doc Return true if Va is a direct descendant of Vb, 
@@ -124,11 +137,11 @@ Definition max' vclock clock :=
                            end
   end.
 
-Definition merge vc1 vc2 :=
-  fold_left max' vc1 vc2.
+Definition merge vc1 vc2 := fold_left max' vc1 vc2.
 
 Eval compute in merge (increment 1 (fresh)) (increment 2 (fresh)).
 Eval compute in merge (increment 2 (fresh)) (increment 2 (fresh)).
+Eval compute in merge (increment 2 (fresh)) (increment 2 (increment 2 (fresh))).
 
 End VVClock.
 
