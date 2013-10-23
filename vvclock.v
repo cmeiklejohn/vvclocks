@@ -77,9 +77,6 @@ Definition equal vc1 vc2 :=
                      end
   end.
                                           
-Eval compute in equal (increment 1 (fresh)) (increment 1 (fresh)).
-Eval compute in equal fresh (increment 1 (fresh)).
-
 (*
   % @doc Return true if Va is a direct descendant of Vb, 
   % else false -- remember, a vclock is its own descendant!
@@ -124,10 +121,6 @@ Definition descends vc1 vc2 :=
     | pair true _ => true
   end.
 
-Eval compute in descends (increment 1 (fresh)) (fresh).
-Eval compute in equal (increment 1 (fresh)) (increment 1 (fresh)).
-Eval compute in equal (increment 1 (fresh)) (increment 2 (fresh)).
-
 (*
   % @doc Combine all VClocks in the input list into their least possible
   %      common descendant.
@@ -170,12 +163,8 @@ Definition max' vclock clock :=
 
 Definition merge vc1 vc2 := fold_left max' vc1 vc2.
 
-Eval compute in merge (increment 1 (fresh)) (increment 2 (fresh)).
-Eval compute in merge (increment 2 (fresh)) (increment 2 (fresh)).
-Eval compute in merge (increment 2 (fresh)) (increment 2 (increment 2 (fresh))).
-
 End VVClock.
 
 Extraction Language CoreErlang.
 
-Recursive Extraction VVClock.
+Recursive Extraction VVClock.fresh.
