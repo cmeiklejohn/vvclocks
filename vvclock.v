@@ -34,20 +34,18 @@ Definition fresh : vclock := nil.
       [{Node,C1}|NewV].
 *)
 
-Definition find' (actor : nat) (clock : (nat * nat)) :=
-  match clock with
-  | pair x _ => beq_nat actor x 
-  end.
-
-Definition find'' (actor : nat) (clock : (nat * nat)) :=
-  match clock with
-  | pair x _ => negb (beq_nat actor x)
-  end.
-
 Definition increment (actor : nat) (vclock : vclock) :=
-  match (find (find' actor) vclock) with
-  | None => cons (pair actor 1) vclock
-  | Some (pair x y) => cons (pair x (S y)) (filter (find'' actor) vclock)
+  match (find (fun clock => match clock with
+                            | pair x _ => beq_nat actor x
+                        end) vclock) with
+  | None => 
+    cons (pair actor 1) vclock
+  | Some (pair x y) => 
+    cons (pair x (S y)) (filter
+                           (fun clock => match clock with
+                                           | pair x _ =>
+                                             negb (beq_nat actor x)
+                                         end) vclock)
   end.
 
 (*
@@ -59,13 +57,18 @@ Definition increment (actor : nat) (vclock : vclock) :=
 
 Definition equal' status_and_vclock clock :=
   match clock, status_and_vclock with
-    | pair actor count, pair status vclock => match find (find' actor) vclock with
-                                                | None => pair false vclock
-                                                | Some (pair _ y) => 
-                                                  pair (andb
-                                                          status
-                                                          (beq_nat count y)) vclock
-                                              end
+    | pair actor count, 
+      pair status vclock => match find
+                                    (fun clock => match clock with
+                                                    | pair x _ =>
+                                                      beq_nat actor x
+                                                  end) vclock with
+                              | None => pair false vclock
+                              | Some (pair _ y) => 
+                                pair (andb
+                                        status
+                                        (beq_nat count y)) vclock
+                            end
   end.
 
 Definition equal vc1 vc2 := 
@@ -106,19 +109,27 @@ Fixpoint ble_nat (n m : nat) {struct n} : bool :=
 
 Definition descends' status_and_vclock clock :=
   match clock, status_and_vclock with
-    | pair actor count, pair status vclock => match find (find' actor) vclock with
-                                                | None => pair true vclock
-                                                | Some (pair _ y) => 
-                                                  pair (andb
-                                                          status
-                                                          (ble_nat count y)) vclock
-                                              end
+    | pair actor count,
+      pair status vclock => match find
+                                    (fun clock => match clock with
+                                                    | pair x _ =>
+                                                      beq_nat actor x
+                                                  end)
+                                    vclock with
+                              | None => pair true vclock
+                              | Some (pair _ y) => 
+                                pair (andb
+                                        status
+                                        (ble_nat count y)) vclock
+                                                               end
   end.
 
 Definition descends vc1 vc2 := 
   match fold_left descends' vc1 (pair true vc2) with
-    | pair false _ => false
-    | pair true _ => true
+    | pair false _ =>
+      false
+    | pair true _ => 
+      true
   end.
 
 (*
@@ -153,11 +164,21 @@ Definition descends vc1 vc2 :=
 
 Definition max' vclock clock :=
   match clock with
-    | pair actor count =>  match find (find' actor) vclock with
-                             | None => cons (pair actor count) vclock
-                             | Some (pair _ y) => cons (pair actor (max count y))
-                                                       (filter
-                                                          (find'' actor) vclock)
+    | pair actor count =>  match find
+                                   (fun clock => match clock with
+                                                   | pair x _ => beq_nat actor x
+                                                 end) vclock with
+                             | None => 
+                               cons (pair actor count) vclock
+                             | Some (pair _ y) => 
+                               cons (pair actor
+                                          (max count y))
+                                    (filter
+                                       (fun clock => match clock with
+                                                       | pair x _ =>
+                                                         negb (beq_nat actor x)
+                                                     end)
+                                       vclock)
                            end
   end.
 
