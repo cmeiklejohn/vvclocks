@@ -201,7 +201,7 @@ module 'vvclock' [ 'fresh'/0, 'increment'/2, 'equal@'/2, 'equal'/2, 'ble_nat'/2,
    end
 'descends'/2 = fun (_vc1, _vc2) ->
   case call 'Coq.Lists.List':'fold_left'
-            ( 'descends@'
+            ( 'descends@'/2
             , _vc1
             , { 'Pair'
               , 'True'
