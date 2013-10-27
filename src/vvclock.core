@@ -1,10 +1,10 @@
-module 'vvclock' [ 'fresh'/0, 'increment'/2, 'equal@'/2, 'equal'/2, 'ble_nat'/2, 'descends@'/2, 'descends'/2, 'max@'/2, 'merge'/2 ] attributes [ ]
+module 'vvclock' [ 'fresh'/0, 'increment'/2, 'equal@'/2, 'equal'/2, 'ble_nat'/2, 'descends@'/2, 'descends'/2, 'max@'/2, 'merge'/2 ] attributes [ ] 
 
 'fresh'/0 = fun() ->
   []
-'increment'/2 = fun (_actor, _vclock) ->
+'increment'/2 = fun (_actor, _vclock) -> 
   case call 'Coq.Lists.List':'find'
-            ( fun (_clock) ->
+            ( fun (_clock) -> 
                 case _clock of
                   { 'Pair'
                   , _y
@@ -27,7 +27,7 @@ module 'vvclock' [ 'fresh'/0, 'increment'/2, 'equal@'/2, 'equal'/2, 'ble_nat'/2,
               , _y
               , {'S', _x}
               }|call 'Coq.Lists.List':'filter'
-                   ( fun (_clock) ->
+                   ( fun (_clock) -> 
                        case _clock of
                          { 'Pair'
                          , _y0
@@ -47,7 +47,7 @@ module 'vvclock' [ 'fresh'/0, 'increment'/2, 'equal@'/2, 'equal'/2, 'ble_nat'/2,
         , {'S', 'O'}
         }|_vclock]
    end
-'equal@'/2 = fun (_status_and_vclock, _clock) ->
+'equal@'/2 = fun (_status_and_vclock, _clock) -> 
   case _clock of
     { 'Pair'
     , _count
@@ -59,7 +59,7 @@ module 'vvclock' [ 'fresh'/0, 'increment'/2, 'equal@'/2, 'equal'/2, 'ble_nat'/2,
           , _status
           } when 'true' ->
               case call 'Coq.Lists.List':'find'
-                        ( fun (_clock0) ->
+                        ( fun (_clock0) -> 
                             case _clock0 of
                               { 'Pair'
                               , _y
@@ -99,7 +99,7 @@ module 'vvclock' [ 'fresh'/0, 'increment'/2, 'equal@'/2, 'equal'/2, 'ble_nat'/2,
                end
          end
    end
-'equal'/2 = fun (_vc1, _vc2) ->
+'equal'/2 = fun (_vc1, _vc2) -> 
   case call 'Coq.Lists.List':'fold_left'
             ( 'equal@'
             , _vc1
@@ -132,7 +132,7 @@ module 'vvclock' [ 'fresh'/0, 'increment'/2, 'equal@'/2, 'equal'/2, 'ble_nat'/2,
               'False'
          end
    end
-'ble_nat'/2 = fun (_n, _m) ->
+'ble_nat'/2 = fun (_n, _m) -> 
   case _n of
     'O' when 'true' ->
         'True'
@@ -147,7 +147,7 @@ module 'vvclock' [ 'fresh'/0, 'increment'/2, 'equal@'/2, 'equal'/2, 'ble_nat'/2,
                    )
          end
    end
-'descends@'/2 = fun (_status_and_vclock, _clock) ->
+'descends@'/2 = fun (_status_and_vclock, _clock) -> 
   case _clock of
     { 'Pair'
     , _count
@@ -159,7 +159,7 @@ module 'vvclock' [ 'fresh'/0, 'increment'/2, 'equal@'/2, 'equal'/2, 'ble_nat'/2,
           , _status
           } when 'true' ->
               case call 'Coq.Lists.List':'find'
-                        ( fun (_clock0) ->
+                        ( fun (_clock0) -> 
                             case _clock0 of
                               { 'Pair'
                               , _y
@@ -193,19 +193,19 @@ module 'vvclock' [ 'fresh'/0, 'increment'/2, 'equal@'/2, 'equal'/2, 'ble_nat'/2,
                      end
                 'None' when 'true' ->
                     { 'Pair'
-                    , 'True'
+                    , 'False'
                     , _status
                     }
                end
          end
    end
-'descends'/2 = fun (_vc1, _vc2) ->
+'descends'/2 = fun (_vc1, _vc2) -> 
   case call 'Coq.Lists.List':'fold_left'
             ( 'descends@'/2
-            , _vc1
+            , _vc2
             , { 'Pair'
               , 'True'
-              , _vc2
+              , _vc1
               }
             ) of
     { 'Pair'
@@ -214,14 +214,14 @@ module 'vvclock' [ 'fresh'/0, 'increment'/2, 'equal@'/2, 'equal'/2, 'ble_nat'/2,
     } when 'true' ->
         _l
    end
-'max@'/2 = fun (_vclock, _clock) ->
+'max@'/2 = fun (_vclock, _clock) -> 
   case _clock of
     { 'Pair'
     , _count
     , _actor
     } when 'true' ->
         case call 'Coq.Lists.List':'find'
-                  ( fun (_clock0) ->
+                  ( fun (_clock0) -> 
                       case _clock0 of
                         { 'Pair'
                         , _y
@@ -247,7 +247,7 @@ module 'vvclock' [ 'fresh'/0, 'increment'/2, 'equal@'/2, 'equal'/2, 'ble_nat'/2,
                          , _n
                          )
                     }|call 'Coq.Lists.List':'filter'
-                         ( fun (_clock0) ->
+                         ( fun (_clock0) -> 
                              case _clock0 of
                                { 'Pair'
                                , _y0
@@ -268,10 +268,10 @@ module 'vvclock' [ 'fresh'/0, 'increment'/2, 'equal@'/2, 'equal'/2, 'ble_nat'/2,
               }|_vclock]
          end
    end
-'merge'/2 = fun (_vc1, _vc2) ->
-   call 'Coq.Lists.List':'fold_left'
-      ( 'max'
-      , _vc1
-      , _vc2
-      )
-  end
+'merge'/2 = fun (_vc1, _vc2) -> 
+  call 'Coq.Lists.List':'fold_left'
+       ( 'max@'
+       , _vc1
+       , _vc2
+       )
+end
