@@ -116,7 +116,7 @@ Definition descends' status_and_vclock clock :=
                                                       beq_nat actor x
                                                   end)
                                     vclock with
-                              | None => pair true vclock
+                              | None => pair false vclock
                               | Some (pair _ y) => 
                                 pair (andb
                                         status
@@ -125,7 +125,7 @@ Definition descends' status_and_vclock clock :=
   end.
 
 Definition descends vc1 vc2 := 
-  match fold_left descends' vc1 (pair true vc2) with
+  match fold_left descends' vc2 (pair true vc1) with
     | pair false _ =>
       false
     | pair true _ => 
