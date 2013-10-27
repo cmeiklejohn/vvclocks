@@ -141,7 +141,7 @@ module 'vvclock' [ 'fresh'/0, 'increment'/2, 'equal@'/2, 'equal'/2, 'ble_nat'/2,
           'O' when 'true' ->
               'False'
           {'S', _m@} when 'true' ->
-              call 'vvclock.VVClock':'ble_nat'
+              call 'vvclock':'ble_nat'
                    ( _n@
                    , _m@
                    )
@@ -181,7 +181,7 @@ module 'vvclock' [ 'fresh'/0, 'increment'/2, 'equal@'/2, 'equal'/2, 'ble_nat'/2,
                           { 'Pair'
                           , case _vclock of
                             'True' when 'true' ->
-                                call 'vvclock.VVClock':'ble_nat'
+                                call 'vvclock':'ble_nat'
                                      ( _actor
                                      , _n
                                      )
@@ -270,7 +270,7 @@ module 'vvclock' [ 'fresh'/0, 'increment'/2, 'equal@'/2, 'equal'/2, 'ble_nat'/2,
    end
 'merge'/2 = fun (_vc1, _vc2) -> 
   call 'Coq.Lists.List':'fold_left'
-       ( 'max@'
+       ( 'max@'/2
        , _vc1
        , _vc2
        )

@@ -30,7 +30,7 @@ example_test() ->
     'False' = vvclock:descends(A1, B1),
 
     A2 = vvclock:increment('O', A1),
-    C  = vvclock:merge([A2, B1]),
+    C  = vvclock:merge(A2, B1),
     C1 = vvclock:increment({'S', {'S', 'O'}}, C),
 
     'True'  = vvclock:descends(C1, A2),
