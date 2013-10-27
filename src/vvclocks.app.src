@@ -1,4 +1,4 @@
-{application, vvclock,
+{application, vvclocks,
  [
   {description, ""},
   {vsn, "1"},
