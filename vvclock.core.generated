@@ -292,7 +292,7 @@ module 'vvclock' [ 'increment'/2, 'equal@'/2, 'equal'/2, 'ble_nat'/2, 'descends@
                      end
                 'None' when 'true' ->
                     { 'Pair'
-                    , 'True'
+                    , 'False'
                     , _status
                     }
                end
@@ -301,10 +301,10 @@ module 'vvclock' [ 'increment'/2, 'equal@'/2, 'equal'/2, 'ble_nat'/2, 'descends@
 'descends'/2 = fun (_vc1, _vc2) -> 
   case call 'Coq.Lists.List':'fold_left'
             ( 'descends@'
-            , _vc1
+            , _vc2
             , { 'Pair'
               , 'True'
-              , _vc2
+              , _vc1
               }
             ) of
     { 'Pair'
