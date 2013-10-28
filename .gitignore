@@ -2,6 +2,7 @@
 *.glob
 *.beam
 *~
+.#*.v
 *#
 *.dump
 ebin
