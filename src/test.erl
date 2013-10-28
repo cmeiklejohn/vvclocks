@@ -33,6 +33,10 @@ riak_core_test() ->
     C  = vvclock:merge(A2, B1),
     C1 = vvclock:increment({'S', {'S', 'O'}}, C),
 
+    io:format("A2: ~p~n", [A2]),
+    io:format("C: ~p~n",  [C]),
+    io:format("C1: ~p~n", [C1]),
+
     'True'  = vvclock:descends(C1, A2),
     'True'  = vvclock:descends(C1, B1),
     'False' = vvclock:descends(B1, C1),
