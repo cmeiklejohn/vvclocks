@@ -1,4 +1,4 @@
-module 'vvclock' [ 'fresh'/0, 'increment'/2, 'equal@'/2, 'equal'/2, 'ble_nat'/2, 'descends@'/2, 'descends'/2, 'max@'/2, 'merge'/2 ] attributes [ ] 
+module 'vvclock' [ 'fresh'/0, 'increment'/2, 'equal@'/2, 'equal'/2, 'ble_nat'/2, 'descends@'/2, 'descends'/2, 'max@'/2, 'merge'/2, 'get_counter'/2, 'all_nodes'/1 ] attributes [ ] 
 
 'fresh'/0 = fun() ->
   []
@@ -274,4 +274,43 @@ module 'vvclock' [ 'fresh'/0, 'increment'/2, 'equal@'/2, 'equal'/2, 'ble_nat'/2,
        , _vc1
        , _vc2
        )
+'get_counter'/2 = fun (_actor, _vclock) -> 
+  case call 'Coq.Lists.List':'find'
+            ( fun (_clock) -> 
+                case _clock of
+                  { 'Pair'
+                  , _y
+                  , _x
+                  } when 'true' ->
+                      call 'Coq.Arith.EqNat':'beq_nat'
+                           ( _actor
+                           , _y
+                           )
+                 end
+            , _vclock
+            ) of
+    {'Some', _p} when 'true' ->
+        case _p of
+          { 'Pair'
+          , _vc
+          , _a
+          } when 'true' ->
+              {'Some', _a}
+         end
+    'None' when 'true' ->
+        'None'
+   end
+'all_nodes'/1 = fun (_vclock) -> 
+  case _vclock of
+    [] when 'true' ->
+        []
+    [_cs|_c] when 'true' ->
+        case _cs of
+          { 'Pair'
+          , _y
+          , _x
+          } when 'true' ->
+              [_y|call 'vvclock.VVClock':'all_nodes' (_c)]
+         end
+   end
 end
