@@ -211,10 +211,12 @@ Definition get_counter (actor : nat) (vclock : vclock) :=
 
 Fixpoint all_nodes (vclock : vclock) :=
   match vclock with
-    | nil => nil
-    | c :: cs => match c with
-                   | pair x y => x :: all_nodes cs
-                 end
+    | nil => 
+      nil
+    | c :: cs => 
+      match c with
+        | pair x y => x :: all_nodes cs
+      end
   end.
 
 End VVClock.
