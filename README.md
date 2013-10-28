@@ -1,4 +1,4 @@
-# verified-vector-clocks
+# vvclocks
 
 Verified vector clocks, with Coq!
 
