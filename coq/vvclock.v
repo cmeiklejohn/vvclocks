@@ -184,6 +184,25 @@ Definition max' vclock clock :=
 
 Definition merge vc1 vc2 := fold_left max' vc1 vc2.
 
+(*
+  % @doc Get the counter value in VClock set from Node.
+  get_counter(Node, VClock) ->
+      case lists:keyfind(Node, 1, VClock) of
+          {_, {Ctr, _TS}} -> Ctr;
+          false           -> 0
+      end.
+*)
+
+Definition get_counter (actor : nat) (vclock : vclock) :=
+  match find (fun clock => match clock with
+                             | pair x _ => beq_nat actor x
+                           end) vclock with
+      | None => 
+        None
+      | Some (pair a vc) =>
+        Some vc
+  end.
+
 End VVClock.
 
 Extraction Language CoreErlang.
