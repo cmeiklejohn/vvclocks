@@ -203,8 +203,22 @@ Definition get_counter (actor : nat) (vclock : vclock) :=
         Some vc
   end.
 
+(*
+  % @doc Return the list of all nodes that have ever incremented VClock.
+  all_nodes(VClock) ->
+      [X || {X,{_,_}} <- VClock].
+*)
+
+Fixpoint all_nodes (vclock : vclock) :=
+  match vclock with
+    | nil => nil
+    | c :: cs => match c with
+                   | pair x y => x :: all_nodes cs
+                 end
+  end.
+
 End VVClock.
 
 Extraction Language CoreErlang.
 
-Recursive Extraction VVClock.fresh.
+Recursive Extraction VVClock.
