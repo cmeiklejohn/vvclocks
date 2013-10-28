@@ -1,8 +1,8 @@
 -module(test).
--export([test/0]).
+-compile([export_all]).
 
 %% @doc Generate a test vector clock.
-test() ->
+test_test() ->
     Fresh = vvclock:fresh(),
     io:format("Fresh: ~p~n", [Fresh]),
     Incremented = vvclock:increment(1, Fresh),

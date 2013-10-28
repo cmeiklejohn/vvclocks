@@ -6,3 +6,4 @@
 *#
 *.dump
 ebin
+.eunit
