@@ -73,11 +73,13 @@ Definition equal' status_and_vclock clock :=
 
 Definition equal vc1 vc2 := 
   match fold_left equal' vc1 (pair true vc2) with
-    | pair false _ => false
-    | pair true _ => match fold_left equal' vc2 (pair true vc1) with
-                       | pair false _ => false
-                       | pair true _ => true
-                     end
+    | pair false _ => 
+      false
+    | pair true _ => 
+      match fold_left equal' vc2 (pair true vc1) with
+        | pair false _ => false
+        | pair true _ => true
+      end
   end.
                                           
 (*
@@ -184,6 +186,7 @@ Definition max' vclock clock :=
 
 Definition merge vc1 vc2 := fold_left max' vc1 vc2.
 
+
 (*
   % @doc Get the counter value in VClock set from Node.
   get_counter(Node, VClock) ->
@@ -218,6 +221,16 @@ Fixpoint all_nodes (vclock : vclock) :=
         | pair x y => x :: all_nodes cs
       end
   end.
+
+Theorem merge_idemp : forall vc1, merge vc1 vc1 = vc1.
+Proof. Admitted.
+
+Theorem merge_comm : forall vc1 vc2, merge vc1 vc2 = merge vc2 vc1.
+Proof. Admitted.
+
+Theorem merge_assoc : forall vc1 vc2 vc3, 
+                        merge vc1 (merge vc2 vc3) = merge (merge vc1 vc2) vc3.
+Proof. Admitted.
 
 End VVClock.
 
