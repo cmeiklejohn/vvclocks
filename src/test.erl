@@ -2,17 +2,17 @@
 -compile([export_all]).
 
 %% @doc Generate a test vector clock.
-test_test() ->
+main_test() ->
     Fresh = vvclock:fresh(),
     io:format("Fresh: ~p~n", [Fresh]),
     Incremented = vvclock:increment(1, Fresh),
     io:format("Incremented: ~p~n", [Incremented]),
 
     %% Run the vector clock test from Riak Core.
-    example_test().
+    riak_core_test().
 
 %% @doc Take from riak_core/src/vclock.erl.
-example_test() ->
+riak_core_test() ->
     A  = vvclock:fresh(),
     B  = vvclock:fresh(),
     A1 = vvclock:increment('O', A),

@@ -23,6 +23,9 @@ distclean: clean
 test: all
 	@./rebar skip_deps=true eunit
 
+itest: all
+	erl -pa ebin -noshell -s test main_test -s init stop
+
 ##
 ## Doc targets
 ##
