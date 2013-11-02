@@ -18,6 +18,13 @@ cd deps/vvclocks
 make
 ```
 
+To run tests:
+
+```erlang
+make test
+make itest
+```
+
 ## Copyright
 
 Copyright (C) 2013 Christopher Meiklejohn.
