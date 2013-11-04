@@ -310,7 +310,7 @@ module 'vvclock' [ 'fresh'/0, 'increment'/2, 'equal@'/2, 'equal'/2, 'ble_nat'/2,
           , _y
           , _x
           } when 'true' ->
-              [_y|call 'vvclock.VVClock':'all_nodes' (_c)]
+              [_y|call 'vvclock':'all_nodes' (_c)]
          end
    end
 end
