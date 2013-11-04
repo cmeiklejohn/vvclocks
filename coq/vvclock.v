@@ -215,8 +215,6 @@ Fixpoint all_nodes (vclock : vclock) :=
       end
   end.
 
-SearchAbout fold_right.
-
 Theorem merge_idemp : forall vc1, merge vc1 vc1 = vc1.
 Proof. Admitted.
 
