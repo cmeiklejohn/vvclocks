@@ -49,16 +49,13 @@ Definition find'' (actor : actor) :=
                            | pair x _ => negb (beq_nat actor x)
                        end.
 
+(** Increment actor in the vclock *)
 Definition increment (actor : actor) (vclock : vclock) :=
   match find (find' actor) vclock with
   | None => 
     cons (pair actor 1) vclock
   | Some (pair x y) => 
-    cons (pair x (S y)) (filter
-                           (fun clock => match clock with
-                                           | pair x _ =>
-                                             negb (beq_nat actor x)
-                                         end) vclock)
+    cons (pair x (S y)) (filter (find' actor) vclock)
   end.
 
 (*
