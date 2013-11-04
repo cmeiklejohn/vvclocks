@@ -37,10 +37,20 @@ Definition fresh : vclock := nil.
       [{Node,C1}|NewV].
 *)
 
+(** Return a single arity function which searches for a particular actor. *)
+Definition find' (actor : actor) :=
+  fun clock : clock => match clock with
+                           | pair x _ => beq_nat actor x
+                       end.
+
+(** Return a single arity function which will be filter predicate for actor. *)
+Definition find'' (actor : actor) :=
+  fun clock : clock => match clock with
+                           | pair x _ => negb (beq_nat actor x)
+                       end.
+
 Definition increment (actor : actor) (vclock : vclock) :=
-  match (find (fun clock => match clock with
-                            | pair x _ => beq_nat actor x
-                        end) vclock) with
+  match find (find' actor) vclock with
   | None => 
     cons (pair actor 1) vclock
   | Some (pair x y) => 
@@ -61,12 +71,9 @@ Definition increment (actor : actor) (vclock : vclock) :=
 Definition equal' status_and_vclock (clock : clock) :=
   match clock, status_and_vclock with
     | pair actor count, 
-      pair status vclock => match find
-                                    (fun clock => match clock with
-                                                    | pair x _ =>
-                                                      beq_nat actor x
-                                                  end) vclock with
-                              | None => pair false vclock
+      pair status vclock => match find (find' actor) vclock with
+                              | None => 
+                                pair false vclock
                               | Some (pair _ y) => 
                                 pair (andb
                                         status
@@ -80,8 +87,10 @@ Definition equal (vc1 vc2 : vclock) :=
       false
     | pair true _ => 
       match fold_left equal' vc2 (pair true vc1) with
-        | pair false _ => false
-        | pair true _ => true
+        | pair false _ => 
+          false
+        | pair true _ => 
+          true
       end
   end.
                                           
@@ -115,13 +124,9 @@ Fixpoint ble_nat (n m : nat) {struct n} : bool :=
 Definition descends' status_and_vclock (clock : clock) :=
   match clock, status_and_vclock with
     | pair actor count,
-      pair status vclock => match find
-                                    (fun clock => match clock with
-                                                    | pair x _ =>
-                                                      beq_nat actor x
-                                                  end)
-                                    vclock with
-                              | None => pair false vclock
+      pair status vclock => match find (find' actor) vclock with
+                              | None => 
+                                pair false vclock
                               | Some (pair _ y) => 
                                 pair (andb
                                         status
@@ -169,21 +174,12 @@ Definition descends (vc1 vc2 : vclock) :=
 
 Definition max' (vclock : vclock) (clock : clock) :=
   match clock with
-    | pair actor count =>  match find
-                                   (fun clock => match clock with
-                                                   | pair x _ => beq_nat actor x
-                                                 end) vclock with
+    | pair actor count =>  match find (find' actor) vclock with
                              | None => 
                                cons (pair actor count) vclock
                              | Some (pair _ y) => 
-                               cons (pair actor
-                                          (max count y))
-                                    (filter
-                                       (fun clock => match clock with
-                                                       | pair x _ =>
-                                                         negb (beq_nat actor x)
-                                                     end)
-                                       vclock)
+                               cons (pair actor (max count y))
+                                    (filter (find'' actor) vclock)
                            end
   end.
 
@@ -199,9 +195,7 @@ Definition merge (vc1 vc2 : vclock) := fold_left max' vc1 vc2.
 *)
 
 Definition get_counter (actor : actor) (vclock : vclock) :=
-  match find (fun clock => match clock with
-                             | pair x _ => beq_nat actor x
-                           end) vclock with
+  match find (find' actor) vclock with
       | None => 
         None
       | Some (pair a vc) =>
@@ -223,6 +217,8 @@ Fixpoint all_nodes (vclock : vclock) :=
         | pair x y => x :: all_nodes cs
       end
   end.
+
+SearchAbout fold_right.
 
 Theorem merge_idemp : forall vc1, merge vc1 vc1 = vc1.
 Proof. Admitted.
