@@ -230,6 +230,15 @@ Theorem merge_assoc : forall vc1 vc2 vc3,
                         merge vc1 (merge vc2 vc3) = merge (merge vc1 vc2) vc3.
 Proof. Admitted.
 
+Theorem vclock_increment : forall (actor : actor) (vclock : vclock),
+  descends (increment actor vclock) vclock = true.
+Proof. Admitted.
+
+Theorem vclock_antisymmetric : forall (actor : actor) (vclock : vclock),
+  descends (increment actor vclock) vclock = 
+    negb (descends vclock (increment actor vclock)).
+Proof. Admitted.
+
 End VVClock.
 
 Extraction Language CoreErlang.
