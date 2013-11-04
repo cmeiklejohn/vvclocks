@@ -4,7 +4,10 @@ Require Import Coq.Bool.Bool.
 
 Module VVClock.
 
-Definition vclock := list (nat * nat)%type.
+Definition actor := nat.
+Definition count := nat.
+Definition clock := (actor * count)%type.
+Definition vclock := list clock%type.
 
 (*
   % @doc Create a brand new vclock.
@@ -34,7 +37,7 @@ Definition fresh : vclock := nil.
       [{Node,C1}|NewV].
 *)
 
-Definition increment (actor : nat) (vclock : vclock) :=
+Definition increment (actor : actor) (vclock : vclock) :=
   match (find (fun clock => match clock with
                             | pair x _ => beq_nat actor x
                         end) vclock) with
@@ -55,7 +58,7 @@ Definition increment (actor : nat) (vclock : vclock) :=
       lists:sort(VA) =:= lists:sort(VB).
 *)
 
-Definition equal' status_and_vclock clock :=
+Definition equal' status_and_vclock (clock : clock) :=
   match clock, status_and_vclock with
     | pair actor count, 
       pair status vclock => match find
@@ -71,7 +74,7 @@ Definition equal' status_and_vclock clock :=
                             end
   end.
 
-Definition equal vc1 vc2 := 
+Definition equal (vc1 vc2 : vclock) := 
   match fold_left equal' vc1 (pair true vc2) with
     | pair false _ => 
       false
@@ -109,7 +112,7 @@ Fixpoint ble_nat (n m : nat) {struct n} : bool :=
       end
   end.
 
-Definition descends' status_and_vclock clock :=
+Definition descends' status_and_vclock (clock : clock) :=
   match clock, status_and_vclock with
     | pair actor count,
       pair status vclock => match find
@@ -126,7 +129,7 @@ Definition descends' status_and_vclock clock :=
                                                                end
   end.
 
-Definition descends vc1 vc2 := 
+Definition descends (vc1 vc2 : vclock) := 
   match fold_left descends' vc2 (pair true vc1) with
     | pair false _ =>
       false
@@ -164,7 +167,7 @@ Definition descends vc1 vc2 :=
       end.
 *)
 
-Definition max' vclock clock :=
+Definition max' (vclock : vclock) (clock : clock) :=
   match clock with
     | pair actor count =>  match find
                                    (fun clock => match clock with
@@ -184,8 +187,7 @@ Definition max' vclock clock :=
                            end
   end.
 
-Definition merge vc1 vc2 := fold_left max' vc1 vc2.
-
+Definition merge (vc1 vc2 : vclock) := fold_left max' vc1 vc2.
 
 (*
   % @doc Get the counter value in VClock set from Node.
@@ -196,7 +198,7 @@ Definition merge vc1 vc2 := fold_left max' vc1 vc2.
       end.
 *)
 
-Definition get_counter (actor : nat) (vclock : vclock) :=
+Definition get_counter (actor : actor) (vclock : vclock) :=
   match find (fun clock => match clock with
                              | pair x _ => beq_nat actor x
                            end) vclock with
