@@ -1,4 +1,5 @@
--module(test).
+-module(vvclock_test).
+
 -compile([export_all]).
 
 %% @doc Run all of the tests.
@@ -36,7 +37,7 @@ riak_core_test() ->
     C1 = vvclock:increment({'S', {'S', 'O'}}, C),
 
     io:format("A2: ~p~n", [A2]),
-    io:format("C: ~p~n",  [C]),
+    io:format("C:  ~p~n",  [C]),
     io:format("C1: ~p~n", [C1]),
 
     'True'  = vvclock:descends(C1, A2),

@@ -21,7 +21,7 @@ test: all
 	@./rebar skip_deps=true eunit
 
 itest: all
-	erl -pa ebin -noshell -s test test -s init stop
+	erl -pa ebin -noshell -s vvclock_test test -s init stop
 
 ##
 ## Doc targets
