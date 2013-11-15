@@ -162,6 +162,29 @@ Fixpoint all_nodes (vclock : vclock) :=
       end
   end.
 
+(** Vector clock pruning. 
+
+  The general idea here is to support the following axioms:
+  1.) If it's small, do nothing.
+  2.) Then, if the earliest timestamp is young, do nothing.
+  3.) Then, if it's big, and old, prune, and recurse.
+  4.) Else, do nothing.
+
+*)
+Fixpoint prune'
+         (vclock : vclock)
+         (small large : nat)
+         (young old : timestamp) :=
+  match (ble_nat (length vclock) small) with
+    | true =>
+      vclock
+    | false =>
+      match (negb (ble_nat (length vclock) large)) with
+        | true => vclock
+        | false => vclock
+      end
+  end.
+
 (** Proof that the merge function is idempotent. *)
 Theorem merge_idemp : forall vc1, merge vc1 vc1 = vc1.
 Proof. Admitted.
