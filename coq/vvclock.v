@@ -162,6 +162,9 @@ Fixpoint all_nodes (vclock : vclock) :=
       end
   end.
 
+(** Helper for computing greater than. *)
+Definition bgt_nat (m n : nat) := negb (ble_nat m n).
+
 (** Vector clock pruning. 
 
   The general idea here is to support the following axioms:
@@ -175,13 +178,30 @@ Fixpoint prune'
          (vclock : vclock)
          (small large : nat)
          (young old : timestamp) :=
-  match (ble_nat (length vclock) small) with
-    | true =>
+  match vclock with
+    | nil =>
       vclock
-    | false =>
-      match (negb (ble_nat (length vclock) large)) with
-        | true => vclock
-        | false => vclock
+    | pair actor (pair count timestamp) :: clocks =>
+      match (ble_nat (length vclock) small) with 
+        | true => 
+          vclock
+        | false => 
+          match (ble_nat timestamp young) with
+            | true => 
+              vclock
+            | false => 
+              match (bgt_nat timestamp old) with
+                  | false => 
+                    vclock
+                  | true => 
+                    match (bgt_nat (length vclock) large) with
+                        | false =>
+                          vclock
+                        | true => 
+                          prune' clocks small large young old
+                    end
+              end
+          end
       end
   end.
 
