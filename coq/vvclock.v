@@ -162,6 +162,49 @@ Fixpoint all_nodes (vclock : vclock) :=
       end
   end.
 
+(** Helper for computing greater than. *)
+Definition bgt_nat (m n : nat) := negb (ble_nat m n).
+
+(** Vector clock pruning. 
+
+  The general idea here is to support the following axioms:
+  1.) If it's small, do nothing.
+  2.) Then, if the earliest timestamp is young, do nothing.
+  3.) Then, if it's big, and old, prune, and recurse.
+  4.) Else, do nothing.
+
+*)
+Fixpoint prune'
+         (vclock : vclock)
+         (small large : nat)
+         (young old : timestamp) :=
+  match vclock with
+    | nil =>
+      vclock
+    | pair actor (pair count timestamp) :: clocks =>
+      match (ble_nat (length vclock) small) with 
+        | true => 
+          vclock
+        | false => 
+          match (ble_nat timestamp young) with
+            | true => 
+              vclock
+            | false => 
+              match (bgt_nat timestamp old) with
+                  | false => 
+                    vclock
+                  | true => 
+                    match (bgt_nat (length vclock) large) with
+                        | false =>
+                          vclock
+                        | true => 
+                          prune' clocks small large young old
+                    end
+              end
+          end
+      end
+  end.
+
 (** Proof that the merge function is idempotent. *)
 Theorem merge_idemp : forall vc1, merge vc1 vc1 = vc1.
 Proof. Admitted.
