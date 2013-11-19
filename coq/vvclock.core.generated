@@ -1,10 +1,17 @@
-module 'Coq.Init.Datatypes' [ 'negb'/1 ] attributes [ ] 
+module 'Coq.Init.Datatypes' [ 'negb'/1, 'length'/1 ] attributes [ ] 
 'negb'/1 = fun (_b) -> 
   case _b of
     'True' when 'true' ->
         'False'
     'False' when 'true' ->
         'True'
+   end
+'length'/1 = fun (_l) -> 
+  case _l of
+    [] when 'true' ->
+        'O'
+    [_l@|_y] when 'true' ->
+        {'S', call 'Coq.Init.Datatypes':'length' (_y)}
    end
 end
 
@@ -99,102 +106,132 @@ module 'Coq.Arith.EqNat' [ 'beq_nat'/2 ] attributes [ ]
    end
 end
 
-module 'vvclock' [ 'increment'/2, 'equal@'/2, 'equal'/2, 'ble_nat'/2, 'descends@'/2, 'descends'/2, 'max@'/2, 'merge'/2, 'get_counter'/2, 'all_nodes'/1 ] attributes [ ] 
+module 'vvclock' [ 'find@'/2, 'find@@'/2, 'incr_timestamp'/1, 'incr_count'/1, 'increment'/2, 'equal@'/2, 'equal'/2, 'ble_nat'/2, 'descends@'/2, 'descends'/2, 'max@'/2, 'merge'/2, 'get_counter'/2, 'get_timestamp'/2, 'all_nodes'/1, 'bgt_nat'/2, 'prune@'/5 ] attributes [ ] 
 
+'find@'/2 = fun (_actor, _clock) -> 
+  case _clock of
+    { 'Pair'
+    , _p
+    , _x
+    } when 'true' ->
+        call 'Coq.Arith.EqNat':'beq_nat'
+             ( _actor
+             , _p
+             )
+   end
+'find@@'/2 = fun (_actor, _clock) -> 
+  case _clock of
+    { 'Pair'
+    , _p
+    , _x
+    } when 'true' ->
+        call 'Coq.Init.Datatypes':'negb' (call 'Coq.Arith.EqNat':'beq_nat'
+               ( _actor
+               , _p
+               ))
+   end
+
+'incr_timestamp'/1 = fun (_timestamp) -> 
+  {'S', _timestamp}
+
+'incr_count'/1 = fun (_count) -> 
+  {'S', _count}
 'increment'/2 = fun (_actor, _vclock) -> 
   case call 'Coq.Lists.List':'find'
-            ( fun (_clock) -> 
-                case _clock of
-                  { 'Pair'
-                  , _y
-                  , _x
-                  } when 'true' ->
-                      call 'Coq.Arith.EqNat':'beq_nat'
-                           ( _actor
-                           , _y
-                           )
-                 end
+            ( call 'vvclock.VVClock':'find@' (_actor)
             , _vclock
             ) of
-    {'Some', _p} when 'true' ->
-        case _p of
+    {'Some', _c} when 'true' ->
+        case _c of
           { 'Pair'
-          , _y
+          , _p
           , _x
           } when 'true' ->
-              [{ 'Pair'
-              , _y
-              , {'S', _x}
-              }|call 'Coq.Lists.List':'filter'
-                   ( fun (_clock) -> 
-                       case _clock of
-                         { 'Pair'
-                         , _y0
-                         , _x0
-                         } when 'true' ->
-                             call 'Coq.Init.Datatypes':'negb' (call 'Coq.Arith.EqNat':'beq_nat'
-                                    ( _actor
-                                    , _y0
-                                    ))
-                        end
-                   , _vclock
-                   )]
+              case _x of
+                { 'Pair'
+                , _timestamp
+                , _count
+                } when 'true' ->
+                    [{ 'Pair'
+                    , _p
+                    , { 'Pair'
+                    , call 'vvclock.VVClock':'incr_count' (_timestamp)
+                    , call 'vvclock.VVClock':'incr_timestamp' (_count)
+                    }
+                    }|call 'Coq.Lists.List':'filter'
+                         ( call 'vvclock.VVClock':'find@' (_actor)
+                         , _vclock
+                         )]
+               end
          end
     'None' when 'true' ->
         [{ 'Pair'
         , _actor
-        , {'S', 'O'}
+        , { 'Pair'
+        , 'init_count'
+        , 'init_timestamp'
+        }
         }|_vclock]
    end
 'equal@'/2 = fun (_status_and_vclock, _clock) -> 
   case _clock of
     { 'Pair'
-    , _count
+    , _p
     , _actor
     } when 'true' ->
-        case _status_and_vclock of
+        case _actor of
           { 'Pair'
-          , _vclock
-          , _status
+          , _timestamp
+          , _count
           } when 'true' ->
-              case call 'Coq.Lists.List':'find'
-                        ( fun (_clock0) -> 
-                            case _clock0 of
-                              { 'Pair'
-                              , _y
-                              , _x
-                              } when 'true' ->
-                                  call 'Coq.Arith.EqNat':'beq_nat'
-                                       ( _count
-                                       , _y
-                                       )
-                             end
-                        , _status
-                        ) of
-                {'Some', _p} when 'true' ->
-                    case _p of
-                      { 'Pair'
-                      , _y
-                      , _n
-                      } when 'true' ->
-                          { 'Pair'
-                          , case _vclock of
-                            'True' when 'true' ->
-                                call 'Coq.Arith.EqNat':'beq_nat'
-                                     ( _actor
-                                     , _n
-                                     )
-                            'False' when 'true' ->
-                                'False'
+              case _status_and_vclock of
+                { 'Pair'
+                , _vclock
+                , _status
+                } when 'true' ->
+                    case call 'Coq.Lists.List':'find'
+                              ( call 'vvclock.VVClock':'find@' (_p)
+                              , _status
+                              ) of
+                      {'Some', _c} when 'true' ->
+                          case _c of
+                            { 'Pair'
+                            , _p0
+                            , _a
+                            } when 'true' ->
+                                case _a of
+                                  { 'Pair'
+                                  , _z
+                                  , _y
+                                  } when 'true' ->
+                                      { 'Pair'
+                                      , case _vclock of
+                                        'True' when 'true' ->
+                                            case call 'Coq.Arith.EqNat':'beq_nat'
+                                                      ( _timestamp
+                                                      , _z
+                                                      ) of
+                                              'True' when 'true' ->
+                                                  call 'Coq.Arith.EqNat':'beq_nat'
+                                                       ( _count
+                                                       , _y
+                                                       )
+                                              'False' when 'true' ->
+                                                  'False'
+                                             end
+                                        'False' when 'true' ->
+                                            'False'
+                                       end
+                                      , _status
+                                      }
+                                 end
                            end
+                      'None' when 'true' ->
+                          { 'Pair'
+                          , 'False'
                           , _status
                           }
                      end
-                'None' when 'true' ->
-                    { 'Pair'
-                    , 'False'
-                    , _status
-                    }
                end
          end
    end
@@ -249,52 +286,62 @@ module 'vvclock' [ 'increment'/2, 'equal@'/2, 'equal'/2, 'ble_nat'/2, 'descends@
 'descends@'/2 = fun (_status_and_vclock, _clock) -> 
   case _clock of
     { 'Pair'
-    , _count
+    , _p
     , _actor
     } when 'true' ->
-        case _status_and_vclock of
+        case _actor of
           { 'Pair'
-          , _vclock
-          , _status
+          , _timestamp
+          , _count
           } when 'true' ->
-              case call 'Coq.Lists.List':'find'
-                        ( fun (_clock0) -> 
-                            case _clock0 of
-                              { 'Pair'
-                              , _y
-                              , _x
-                              } when 'true' ->
-                                  call 'Coq.Arith.EqNat':'beq_nat'
-                                       ( _count
-                                       , _y
-                                       )
-                             end
-                        , _status
-                        ) of
-                {'Some', _p} when 'true' ->
-                    case _p of
-                      { 'Pair'
-                      , _y
-                      , _n
-                      } when 'true' ->
-                          { 'Pair'
-                          , case _vclock of
-                            'True' when 'true' ->
-                                call 'vvclock.VVClock':'ble_nat'
-                                     ( _actor
-                                     , _n
-                                     )
-                            'False' when 'true' ->
-                                'False'
+              case _status_and_vclock of
+                { 'Pair'
+                , _vclock
+                , _status
+                } when 'true' ->
+                    case call 'Coq.Lists.List':'find'
+                              ( call 'vvclock.VVClock':'find@' (_p)
+                              , _status
+                              ) of
+                      {'Some', _c} when 'true' ->
+                          case _c of
+                            { 'Pair'
+                            , _p0
+                            , _a
+                            } when 'true' ->
+                                case _a of
+                                  { 'Pair'
+                                  , _z
+                                  , _y
+                                  } when 'true' ->
+                                      { 'Pair'
+                                      , case _vclock of
+                                        'True' when 'true' ->
+                                            case call 'vvclock.VVClock':'ble_nat'
+                                                      ( _timestamp
+                                                      , _z
+                                                      ) of
+                                              'True' when 'true' ->
+                                                  call 'vvclock.VVClock':'ble_nat'
+                                                       ( _count
+                                                       , _y
+                                                       )
+                                              'False' when 'true' ->
+                                                  'False'
+                                             end
+                                        'False' when 'true' ->
+                                            'False'
+                                       end
+                                      , _status
+                                      }
+                                 end
                            end
+                      'None' when 'true' ->
+                          { 'Pair'
+                          , 'False'
                           , _status
                           }
                      end
-                'None' when 'true' ->
-                    { 'Pair'
-                    , 'False'
-                    , _status
-                    }
                end
          end
    end
@@ -316,55 +363,56 @@ module 'vvclock' [ 'increment'/2, 'equal@'/2, 'equal'/2, 'ble_nat'/2, 'descends@
 'max@'/2 = fun (_vclock, _clock) -> 
   case _clock of
     { 'Pair'
-    , _count
+    , _p
     , _actor
     } when 'true' ->
-        case call 'Coq.Lists.List':'find'
-                  ( fun (_clock0) -> 
-                      case _clock0 of
-                        { 'Pair'
-                        , _y
-                        , _x
-                        } when 'true' ->
-                            call 'Coq.Arith.EqNat':'beq_nat'
-                                 ( _count
-                                 , _y
-                                 )
-                       end
-                  , _vclock
-                  ) of
-          {'Some', _p} when 'true' ->
-              case _p of
-                { 'Pair'
-                , _y
-                , _n
-                } when 'true' ->
+        case _actor of
+          { 'Pair'
+          , _timestamp
+          , _count
+          } when 'true' ->
+              case call 'Coq.Lists.List':'find'
+                        ( call 'vvclock.VVClock':'find@' (_p)
+                        , _vclock
+                        ) of
+                {'Some', _c} when 'true' ->
+                    case _c of
+                      { 'Pair'
+                      , _p0
+                      , _a
+                      } when 'true' ->
+                          case _a of
+                            { 'Pair'
+                            , _z
+                            , _y
+                            } when 'true' ->
+                                [{ 'Pair'
+                                , _p
+                                , { 'Pair'
+                                , call 'Coq.Init.Peano':'max'
+                                     ( _timestamp
+                                     , _z
+                                     )
+                                , call 'Coq.Init.Peano':'max'
+                                     ( _count
+                                     , _y
+                                     )
+                                }
+                                }|call 'Coq.Lists.List':'filter'
+                                     ( call 'vvclock.VVClock':'find@@' (_p)
+                                     , _vclock
+                                     )]
+                           end
+                     end
+                'None' when 'true' ->
                     [{ 'Pair'
+                    , _p
+                    , { 'Pair'
+                    , _timestamp
                     , _count
-                    , call 'Coq.Init.Peano':'max'
-                         ( _actor
-                         , _n
-                         )
-                    }|call 'Coq.Lists.List':'filter'
-                         ( fun (_clock0) -> 
-                             case _clock0 of
-                               { 'Pair'
-                               , _y0
-                               , _x
-                               } when 'true' ->
-                                   call 'Coq.Init.Datatypes':'negb' (call 'Coq.Arith.EqNat':'beq_nat'
-                                          ( _count
-                                          , _y0
-                                          ))
-                              end
-                         , _vclock
-                         )]
+                    }
+                    }|_vclock]
                end
-          'None' when 'true' ->
-              [{ 'Pair'
-              , _count
-              , _actor
-              }|_vclock]
          end
    end
 'merge'/2 = fun (_vc1, _vc2) -> 
@@ -375,27 +423,33 @@ module 'vvclock' [ 'increment'/2, 'equal@'/2, 'equal'/2, 'ble_nat'/2, 'descends@
        )
 'get_counter'/2 = fun (_actor, _vclock) -> 
   case call 'Coq.Lists.List':'find'
-            ( fun (_clock) -> 
-                case _clock of
-                  { 'Pair'
-                  , _y
-                  , _x
-                  } when 'true' ->
-                      call 'Coq.Arith.EqNat':'beq_nat'
-                           ( _actor
-                           , _y
-                           )
-                 end
+            ( call 'vvclock.VVClock':'find@' (_actor)
             , _vclock
             ) of
-    {'Some', _p} when 'true' ->
-        case _p of
+    {'Some', _c} when 'true' ->
+        case _c of
           { 'Pair'
-          , _vc
+          , _p
           , _a
           } when 'true' ->
-              {'Some', _a}
+              case _a of
+                { 'Pair'
+                , _timetsamp
+                , _count
+                } when 'true' ->
+                    {'Some', _timetsamp}
+               end
          end
+    'None' when 'true' ->
+        'None'
+   end
+'get_timestamp'/2 = fun (_actor, _vclock) -> 
+  case call 'Coq.Lists.List':'find'
+            ( call 'vvclock.VVClock':'find@' (_actor)
+            , _vclock
+            ) of
+    {'Some', _c} when 'true' ->
+        {'Some', 'dummy'}
     'None' when 'true' ->
         'None'
    end
@@ -410,6 +464,68 @@ module 'vvclock' [ 'increment'/2, 'equal@'/2, 'equal'/2, 'ble_nat'/2, 'descends@
           , _x
           } when 'true' ->
               [_y|call 'vvclock.VVClock':'all_nodes' (_c)]
+         end
+   end
+'bgt_nat'/2 = fun (_m, _n) -> 
+  call 'Coq.Init.Datatypes':'negb' (call 'vvclock.VVClock':'ble_nat'
+         ( _m
+         , _n
+         ))
+'prune@'/5 = fun (_vclock, _small, _large, _young, _old) -> 
+  case _vclock of
+    [] when 'true' ->
+        _vclock
+    [_clocks|_c] when 'true' ->
+        case _clocks of
+          { 'Pair'
+          , _p
+          , _actor
+          } when 'true' ->
+              case _actor of
+                { 'Pair'
+                , _timestamp
+                , _count
+                } when 'true' ->
+                    case call 'vvclock.VVClock':'ble_nat'
+                              ( call 'Coq.Init.Datatypes':'length' (_vclock)
+                              , _small
+                              ) of
+                      'True' when 'true' ->
+                          _vclock
+                      'False' when 'true' ->
+                          case call 'vvclock.VVClock':'ble_nat'
+                                    ( _count
+                                    , _young
+                                    ) of
+                            'True' when 'true' ->
+                                _vclock
+                            'False' when 'true' ->
+                                case call 'vvclock.VVClock':'bgt_nat'
+                                          ( _count
+                                          , _old
+                                          ) of
+                                  'True' when 'true' ->
+                                      case call 'vvclock.VVClock':'bgt_nat'
+                                                ( call 'Coq.Init.Datatypes':'length' (_vclock)
+                                                , _large
+                                                ) of
+                                        'True' when 'true' ->
+                                            call 'vvclock.VVClock':'prune@'
+                                                 ( _c
+                                                 , _small
+                                                 , _large
+                                                 , _young
+                                                 , _old
+                                                 )
+                                        'False' when 'true' ->
+                                            _vclock
+                                       end
+                                  'False' when 'true' ->
+                                      _vclock
+                                 end
+                           end
+                     end
+               end
          end
    end
 end
