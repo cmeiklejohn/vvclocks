@@ -5,7 +5,8 @@
 %% @doc Run all of the tests.
 test() ->
     shallow_test(),
-    riak_core_test().
+    modified_riak_core_example_test(),
+    riak_core_example_test().
 
 %% @doc Generate a test vector clock.
 shallow_test() ->
@@ -14,8 +15,8 @@ shallow_test() ->
     Incremented = vvclock:increment(1, Fresh),
     io:format("Incremented: ~p~n", [Incremented]).
 
-%% @doc Take from riak_core/src/vclock.erl.
-riak_core_test() ->
+%% @doc Modified riak core example test.
+modified_riak_core_example_test() ->
     A  = vvclock:fresh(),
     B  = vvclock:fresh(),
     A1 = vvclock:increment('O', A),
@@ -45,4 +46,22 @@ riak_core_test() ->
     'False' = vvclock:descends(B1, C1),
     'False' = vvclock:descends(B1, A1),
 
+    ok.
+
+%% @doc Riak Core example test.
+riak_core_example_test() ->
+    A = vclock:fresh(),
+    B = vclock:fresh(),
+    A1 = vclock:increment(a, A),
+    B1 = vclock:increment(b, B),
+    true = vclock:descends(A1,A),
+    true = vclock:descends(B1,B),
+    false = vclock:descends(A1,B1),
+    A2 = vclock:increment(a, A1),
+    C = vclock:merge([A2, B1]),
+    C1 = vclock:increment(c, C),
+    true = vclock:descends(C1, A2),
+    true = vclock:descends(C1, B1),
+    false = vclock:descends(B1, C1),
+    false = vclock:descends(B1, A1),
     ok.
