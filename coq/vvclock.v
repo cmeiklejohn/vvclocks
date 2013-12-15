@@ -18,15 +18,22 @@ Definition vclock := (list clock)%type.
 (** Create a new vector clocks. *)
 Definition fresh : vclock := nil.
 
+(** Had to inline the following functions for code 
+    extraction to complete correctly. *)
+ 
+(**
 Definition find' (actor : actor) :=
   fun clock : clock => match clock with
                            | pair x _ => beq_nat actor x
                        end.
+**)
 
+(**
 Definition find'' (actor : actor) :=
   fun clock : clock => match clock with
                            | pair x _ => negb (beq_nat actor x)
                        end.
+*)
 
 (** Function to initialize a timestamp with the default value. *)
 Definition init_timestamp := O.
@@ -42,29 +49,36 @@ Definition incr_count (count : count) := S count.
 
 (** Increment a vector clock. *)
 Definition increment (actor : actor) (vclock : vclock) :=
-  match find (find' actor) vclock with
+  match find (fun clock => match clock with 
+                               | pair x _ => beq_nat actor x
+                           end) vclock with
   | None => 
     cons (pair actor (pair init_count init_timestamp)) vclock
   | Some (pair x (pair count timestamp)) => 
     cons (pair x (pair (incr_count count) (incr_timestamp timestamp)))
-                       (filter (find' actor) vclock)
+         (filter (fun clock => match clock with 
+                                 | pair x _ => negb (beq_nat actor x)
+                               end) vclock)
   end.
 
 (** Helper fold function for equality comparison betwen two vector clocks. *)
 Definition equal' status_and_vclock (clock : clock) :=
   match clock, status_and_vclock with
     | pair actor (pair count timestamp), 
-      pair status vclock => match find (find' actor) vclock with
-                              | None => 
-                                pair false vclock
-                              | Some (pair _ (pair y z)) => 
-                                pair (andb 
-                                        status
-                                        (andb
-                                           (beq_nat count y)
-                                           (beq_nat timestamp z)))
-                                        vclock
-                            end
+      pair status vclock => 
+      match find (fun clock => match clock with 
+                                 | pair x _ => beq_nat actor x
+                               end) vclock with
+        | None => 
+          pair false vclock
+        | Some (pair _ (pair y z)) => 
+          pair (andb 
+                  status
+                  (andb
+                     (beq_nat count y)
+                     (beq_nat timestamp z)))
+               vclock
+      end
   end.
 
 (** Compare equality between two vector clocks. *)
@@ -96,16 +110,19 @@ Fixpoint ble_nat (n m : nat) {struct n} : bool :=
 Definition descends' status_and_vclock (clock : clock) :=
   match clock, status_and_vclock with
     | pair actor (pair count timestamp),
-      pair status vclock => match find (find' actor) vclock with
-                              | None => 
-                                pair false vclock
-                              | Some (pair _ (pair y z)) => 
-                                pair (andb
-                                        status
-                                        (andb
-                                           (ble_nat count y)
-                                           (ble_nat timestamp z))) vclock
-                            end
+      pair status vclock => 
+      match find (fun clock => match clock with 
+                                 | pair x _ => beq_nat actor x
+                               end) vclock with
+        | None => 
+          pair false vclock
+        | Some (pair _ (pair y z)) => 
+          pair (andb
+                  status
+                  (andb
+                     (ble_nat count y)
+                     (ble_nat timestamp z))) vclock
+      end
   end.
 
 (** Determine if one vector clock is a descendent of another. *)
@@ -121,12 +138,16 @@ Definition descends (vc1 vc2 : vclock) :=
 Definition max' (vclock : vclock) (clock : clock) :=
   match clock with
     | pair actor (pair count timestamp) => 
-      match find (find' actor) vclock with
+      match find (fun clock => match clock with 
+                                 | pair x _ => beq_nat actor x
+                               end) vclock with
         | None => 
           cons (pair actor (pair count timestamp)) vclock
         | Some (pair _ (pair y z)) => 
           cons (pair actor (pair (max count y) (max timestamp z)))
-               (filter (find'' actor) vclock)
+               (filter (fun clock => match clock with 
+                                       | pair x _ => negb (beq_nat actor x)
+                                     end) vclock)
       end
   end.
 
@@ -135,17 +156,21 @@ Definition merge (vc1 vc2 : vclock) := fold_left max' vc1 vc2.
 
 (** Return current count of an actor in a vector clock. *)
 Definition get_counter (actor : actor) (vclock : vclock) :=
-  match find (find' actor) vclock with
-      | None => 
-        None
-      | Some (pair a (pair count timetsamp)) =>
-        Some count
+  match find (fun clock => match clock with 
+                                 | pair x _ => beq_nat actor x
+                           end) vclock with
+    | None => 
+      None
+    | Some (pair a (pair count timetsamp)) =>
+      Some count
   end.
 
 (** Return current timestamp of an actor in a vector clock. *)
 Definition get_timestamp (actor : actor) (vclock : vclock) :=
-  match find (find' actor) vclock with
-      | None => 
+  match find (fun clock => match clock with 
+                                 | pair x _ => beq_nat actor x
+                           end) vclock with
+    | None => 
         None
       | Some (pair a (pair count timetsamp)) =>
         Some timestamp
