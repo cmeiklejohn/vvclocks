@@ -74,10 +74,10 @@ all_nodes(VClock) ->
 
 %% @doc Prune vclocks.
 prune(VClock, _Timestamp, BProps) ->
-    Old = get_property(old_vclock, BProps),
-    Young = get_property(young_vclock, BProps),
-    Large = get_property(large_vclock, BProps),
-    Small = get_property(small_vclock, BProps),
+    Old =   term_to_peano(get_property(old_vclock, BProps)),
+    Young = term_to_peano(get_property(young_vclock, BProps)),
+    Large = term_to_peano(get_property(large_vclock, BProps)),
+    Small = term_to_peano(get_property(small_vclock, BProps)),
     vvclock:prune(VClock, Small, Large, Young, Old).
 
 %% @doc Merge function which operates on a list of vector clocks.
@@ -90,7 +90,12 @@ merge([]) ->
 
 %% @doc Compare equality of two vclocks.
 equal(VClock1, VClock2) ->
-    vvclock:equal(VClock1, VClock2).
+    case vvclock:equal(VClock1, VClock2) of
+        'True' ->
+            true;
+        'False' ->
+            false
+    end.
 
 %% @doc Convert a peano number back into an erlang term.
 peano_to_term(Peano) ->
