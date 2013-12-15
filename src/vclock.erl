@@ -8,6 +8,7 @@
 %%
 
 -module(vclock).
+-author('Christopher Meiklejohn <christopher.meiklejohn@gmail.com>').
 
 -export([fresh/0,
          descends/2,
@@ -21,9 +22,19 @@
          prune/3,
          timestamp/0]).
 
+-export([peano_timestamp/0]).
+
+-ifdef(TEST).
+-include_lib("eunit/include/eunit.hrl").
+-endif.
+
 %% @doc Return natural timestamp.
 timestamp() ->
     calendar:datetime_to_gregorian_seconds(erlang:universaltime()).
+
+%% @doc Peanoized timestamp.
+peano_timestamp() ->
+    term_to_peano(timestamp()).
 
 %% @doc Generate a fresh vector clock.
 fresh() ->

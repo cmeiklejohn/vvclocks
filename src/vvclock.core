@@ -3,13 +3,13 @@ module 'vvclock' [ 'fresh'/0, 'init_timestamp'/0, 'incr_timestamp'/1, 'init_coun
 'fresh'/0 = fun () ->
   []
 'init_timestamp'/0 = fun () ->
-  'O'
+  call 'vclock':'peano_timestamp' ()
 'incr_timestamp'/1 = fun (_timestamp) -> 
-  {'S', _timestamp}
+  call 'vclock':'peano_timestamp' ()
 'init_count'/0 = fun () ->
-  'O'
+  call 'vclock':'peano_timestamp' ()
 'incr_count'/1 = fun (_count) -> 
-  {'S', _count}
+  call 'vclock':'peano_timestamp' ()
 'increment'/2 = fun (_actor, _vclock) -> 
   case call 'Coq.Lists.List':'find'
             ( fun (_clock) -> 
